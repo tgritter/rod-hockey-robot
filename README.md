@@ -8,6 +8,7 @@ This project uses a camera to detect the puck position, runs a physics-based sim
 
 ## Components
 
+- **main.py** - Main orchestrator that coordinates vision detection, action calculation, and motor execution
 - **vision.py** - Computer vision module that detects the puck position using a camera and scales coordinates for the simulation
 - **calc.py** - Physics simulation that calculates the best action to take given the current puck position
 - **action.py** - Motor control module that executes the calculated movements via Viam robotics platform
@@ -31,6 +32,7 @@ This project uses a camera to detect the puck position, runs a physics-based sim
 ## Setup
 
 1. Install dependencies:
+
 ```bash
 pip install pygame viam-sdk
 ```
@@ -41,23 +43,33 @@ pip install pygame viam-sdk
 
 ## Usage
 
-Run the simulation with puck coordinates:
+Run the full autonomous robot (detects puck, calculates action, and executes):
+
 ```bash
-python calc.py --puck_x <x_coordinate> --puck_y <y_coordinate>
+python main.py
 ```
 
+Or run individual components:
+
 Get puck coordinates from the camera:
+
 ```bash
 python vision.py
+```
+
+Run the simulation with specific puck coordinates:
+
+```bash
+python calc.py --puck_x <x_coordinate> --puck_y <y_coordinate>
 ```
 
 ## Project Structure
 
 ```
+├── main.py         # Main orchestrator - run this to operate the robot
 ├── action.py       # Motor control and execution
 ├── calc.py         # Physics simulation and action calculation
 ├── vision.py       # Computer vision and puck detection
-└── README.md       # This file
 ```
 
 ## Built With
