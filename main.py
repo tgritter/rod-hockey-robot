@@ -1,48 +1,39 @@
+"""
+Main entry point for the bubble hockey robot.
+
+Pipeline:
+  1. Vision   — detect puck position from camera (game pixel coordinates)
+  2. Planning — select best player and find optimal action
+  3. Execution — send motor commands to the robot
+"""
+
 import asyncio
-import sys
-from vision import get_puck_game_coordinates
-from calc import find_best_action
-from action import execute_best_action
+
+from robot.vision import get_puck_game_coordinates
+from engine.planner import plan_action
+from robot.execution import execute_best_action
+
 
 async def main():
     # 1. Detect the puck
-    coords = await get_puck_game_coordinates()
-    if coords:
-        x, y = coords  # Both x and y are between 0 and 1
-        print(f"Ball at ({x:.3f}, {y:.3f})")
-        scaled_x = 450 - (x * 450)
-        scaled_y = y * 787.5
-        print(f"X Axis:({scaled_x:.3f})")
-        print(f"Y Axis:({scaled_y:.3f})")
-        # 2. Calculate best action
-        best_action = find_best_action(scaled_x, scaled_y)
-        if best_action:
-            print(f"Best action found: {best_action}")
-            # 2. Execute best action
-            await execute_best_action(best_action)
-            sys.exit()    
-        else:
-            print("No successful action found.")
-    
-    # if not coords:
-    #     print("Failed to detect puck. Please check camera and markers.")
-    #     return 1
-    
-    # scaled_x, scaled_y = coords
+    puck_x, puck_y = await get_puck_game_coordinates()
+    if puck_x is None:
+        print("No puck detected.")
+        return
 
-    if scaled_x is not None and scaled_y is not None:
-        print(f"✅ Puck coordinates: x={scaled_x:.1f}, y={scaled_y:.1f}")
-        # 2. Calculate best action
-        best_action = find_best_action(scaled_x, 600.0)
-        if best_action:
-            print(f"Best action found: {best_action}")
-            # 2. Execute best action
-            await execute_best_action(best_action)
-            sys.exit()    
-        else:
-            print("No successful action found.")
-    else:
-        print("❌ No puck detected")
+    print(f"Puck detected at game coordinates: x={puck_x:.1f}, y={puck_y:.1f}")
+
+    # 2. Plan — find the best action for the detected puck position
+    action, player = plan_action(puck_x, puck_y)
+    if action is None:
+        print("No action found — puck may be out of range.")
+        return
+
+    print(f"Action found via {player.name}: {[f'{v:.3f}' for v in action]}")
+
+    # 3. Execute — send the action to the robot motors
+    await execute_best_action(action)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
