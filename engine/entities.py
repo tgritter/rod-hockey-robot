@@ -61,8 +61,12 @@ class Player:
         return self.start_x + progress * SCALE * 1.0
 
     def do_action(self, action):
-        """Apply a normalized action vector [linear_dist, linear_speed, rotation_angle, rotation_speed]."""
-        linear_distance, linear_speed, rotation_angle, rotation_speed = action
+        """Apply a normalized action vector [linear_dist, rotation_angle, rotation_speed].
+
+        Linear speed is always 1.0 (maximum).
+        """
+        linear_distance, rotation_angle, rotation_speed = action
+        linear_speed = 1.0
         self.has_rotated = False
         self.has_hit_puck = False
         self.x = self.start_x

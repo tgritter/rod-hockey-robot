@@ -69,8 +69,8 @@ BLACK = (0,   0,   0)
 # ============================================================
 
 # Center
-min_y_center = 14.5 * SCALE    # 362.5 px
-max_y_center = 23.5 * SCALE    # 587.5 px
+min_y_center = 15   * SCALE    # 375 px
+max_y_center = 24.5 * SCALE    # 612.5 px
 center_x     = 8    * SCALE    # 200 px
 
 # Right Wing

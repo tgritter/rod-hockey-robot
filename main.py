@@ -43,7 +43,7 @@ async def main():
     pygame.quit()
 
     # 4. Execute — send the action to the robot motors
-    await execute_best_action(action)
+    await execute_best_action(action, player)
 
 
 if __name__ == "__main__":

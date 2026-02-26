@@ -98,12 +98,8 @@ def _dist_to_target(puck, target_idx, prioritize_horizontal=False):
     return math.hypot(puck.x - cx, puck.y - cy)
 
 
-def _guided_action(puck_x, puck_y, player_idx, target_idx):
-    """Generate an action biased toward sending the puck to target_idx.
-
-    Combines the ideal geometry (angle from puck to target) with random
-    variance so the search can explore around the perfect trajectory.
-    """
+def _guided_action(puck_y, player_idx):
+    """Generate a guided action for the given player and puck y position."""
     player = players[player_idx]
     movement_range  = player.max_y - player.min_y
     y_clamped       = max(player.min_y, min(player.max_y, puck_y))
@@ -115,24 +111,9 @@ def _guided_action(puck_x, puck_y, player_idx, target_idx):
     else:
         linear_distance += random.uniform(-0.1, 0.1)
 
-    # Ideal angle to send the puck toward the target center
-    cx, cy, *_ = _TARGET_ZONES[target_idx]
-    angle_to_target = math.atan2(cy - puck_y, cx - puck_x)
-    rotation_needed = angle_to_target - (-math.pi / 2)
-
-    # Normalize to [-π, π]
-    while rotation_needed >  math.pi: rotation_needed -= 2 * math.pi
-    while rotation_needed < -math.pi: rotation_needed += 2 * math.pi
-
-    rotation_angle = rotation_needed / (2 * math.pi)
-
-    # Add rotational variance (more at extreme ranges)
-    rotation_angle += random.uniform(-0.4, 0.4) if linear_distance > 0.8 else random.uniform(-0.15, 0.15)
-
     return [
         max(0.0, min(1.0, linear_distance)),
-        random.uniform(0.8, 1.0),
-        max(-1.0, min(1.0, rotation_angle)),
+        random.choice([-1.0, 1.0]),
         random.uniform(0.8, 1.0),
     ]
 
@@ -290,7 +271,7 @@ def find_best_action_for_player(puck_x, puck_y, player_idx, target_idx,
         if i % 1000 == 0 and i > 0:
             print(f"  Guided {i}/{n_guided} — best={best_score:.1f}, hits={puck_hit_count}")
 
-        action = _guided_action(puck_x, puck_y, player_idx, target_idx)
+        action = _guided_action(puck_y, player_idx)
         success, score, final_x, final_y, puck_hit = simulate_action_for_player(
             action, puck_x, puck_y, player_idx, target_idx, is_scoring)
 
@@ -313,7 +294,7 @@ def find_best_action_for_player(puck_x, puck_y, player_idx, target_idx,
             print(f"  Random {i}/{n_random} — best={best_score:.1f}, hits={puck_hit_count}")
 
         linear_dist = random.uniform(0.75, 1.0) if is_extreme_range else random.uniform(0, 1)
-        action = [linear_dist, random.uniform(0.6, 1), random.uniform(-1, 1), random.uniform(0.6, 1)]
+        action = [linear_dist, random.choice([-1.0, 1.0]), random.uniform(0.6, 1)]
 
         success, score, final_x, final_y, puck_hit = simulate_action_for_player(
             action, puck_x, puck_y, player_idx, target_idx, is_scoring)
@@ -384,9 +365,14 @@ def plan_action(puck_x, puck_y):
         if in_scoring_zone:
             print("  In scoring zone — aiming for goal")
             action = find_best_action_for_player(puck_x, puck_y, chosen, 0, is_scoring=True)
+            if action:
+                action[2] = max(0.9, action[2])
         else:
             print("  Moving puck into scoring zone")
             action = find_best_action_for_player(puck_x, puck_y, chosen, 0)
+
+        if action:
+            action[0] = min(1.0, action[0] + 0.1)
 
     elif chosen == PlayerID.RIGHT_WING:
         if puck_y < RIGHT_WING_ZONE1_MAX_Y:
@@ -399,6 +385,8 @@ def plan_action(puck_x, puck_y):
             print("  Zone 3 → center of zone 2")
             target_idx = 6
         action = find_best_action_for_player(puck_x, puck_y, chosen, target_idx)
+        if action:
+            action[0] = min(1.0, action[0] + 0.1)
 
     elif chosen == PlayerID.RIGHT_D:
         if puck_y < RIGHT_D_ZONE_MID_Y:
@@ -424,5 +412,8 @@ def plan_action(puck_x, puck_y):
     else:  # PlayerID.LEFT_WING — 2D zone logic lives inside simulate_action
         print("  Aiming toward center scoring zone")
         action = find_best_action_for_player(puck_x, puck_y, chosen, 0)
+
+    if action:
+        action[1] = math.copysign(1.0, action[1])
 
     return action, chosen
