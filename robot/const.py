@@ -1,16 +1,18 @@
+import os
+
 # ============================================================
 #  Robot connection
 # ============================================================
 
 # Vision system runs on the MacBook
-VISION_ROBOT_ADDRESS = 'vision-main.wpth7nhx2w.viam.cloud'
-VISION_API_KEY       = 'gc81nfdx1kgokgipl4hu0lcvylob6to0'
-VISION_API_KEY_ID    = '40bca621-0c69-4367-b566-c7d58625300e'
+VISION_ROBOT_ADDRESS = os.getenv('VISION_ROBOT_ADDRESS')
+VISION_API_KEY       = os.getenv('VISION_API_KEY')
+VISION_API_KEY_ID    = os.getenv('VISION_API_KEY_ID')
 
 # Motor control runs on the Pi
-EXEC_ROBOT_ADDRESS = 'rig2-main.wpth7nhx2w.viam.cloud'
-EXEC_API_KEY       = '9q2hqp884rvbhuo53g229pni5pqzl9dg'
-EXEC_API_KEY_ID    = '2593b412-0ea9-4881-830b-f790c6f6a2c8'
+EXEC_ROBOT_ADDRESS = os.getenv('EXEC_ROBOT_ADDRESS')
+EXEC_API_KEY       = os.getenv('EXEC_API_KEY')
+EXEC_API_KEY_ID    = os.getenv('EXEC_API_KEY_ID')
 
 
 # ============================================================
