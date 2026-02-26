@@ -7,21 +7,11 @@ load_dotenv()
 #  Robot connection
 # ============================================================
 
-# Vision system runs on the MacBook
-VISION_ROBOT_ADDRESS = os.getenv('VISION_ROBOT_ADDRESS')
-VISION_API_KEY       = os.getenv('VISION_API_KEY')
-VISION_API_KEY_ID    = os.getenv('VISION_API_KEY_ID')
-
-# Motor control — Pi 1 (center player)
-EXEC_ROBOT_ADDRESS = os.getenv('EXEC_ROBOT_ADDRESS')
-EXEC_API_KEY       = os.getenv('EXEC_API_KEY')
-EXEC_API_KEY_ID    = os.getenv('EXEC_API_KEY_ID')
-
-# Motor control — Pi 2 (right wing player)
-EXEC2_ROBOT_ADDRESS = os.getenv('EXEC2_ROBOT_ADDRESS')
-EXEC2_API_KEY       = os.getenv('EXEC2_API_KEY')
-EXEC2_API_KEY_ID    = os.getenv('EXEC2_API_KEY_ID')
-
+# Primary part, right wing player + camera. All other parts are configured as
+# remotes w/ prefixes.
+ROBOT_ADDRESS    = os.getenv('ROBOT_ADDRESS')
+ROBOT_API_KEY    = os.getenv('ROBOT_API_KEY')
+ROBOT_API_KEY_ID = os.getenv('ROBOT_API_KEY_ID')
 
 # ============================================================
 #  Camera → game coordinate mapping

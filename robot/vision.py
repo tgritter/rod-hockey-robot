@@ -12,7 +12,7 @@ from viam.components.camera import Camera
 from viam.services.vision import VisionClient
 
 from .const import (
-    VISION_ROBOT_ADDRESS, VISION_API_KEY, VISION_API_KEY_ID,
+    ROBOT_ADDRESS, ROBOT_API_KEY, ROBOT_API_KEY_ID,
     CAMERA_X_MIN, CAMERA_X_MAX, CAMERA_Y_MIN, CAMERA_Y_MAX,
 )
 from engine.constants import WIDTH, HEIGHT
@@ -63,8 +63,8 @@ def scale_puck_coords(camera_x, camera_y, cam_x_min=CAMERA_X_MIN, cam_x_max=CAME
 
 
 async def _connect():
-    opts = RobotClient.Options.with_api_key(api_key=VISION_API_KEY, api_key_id=VISION_API_KEY_ID)
-    return await RobotClient.at_address(VISION_ROBOT_ADDRESS, opts)
+    opts = RobotClient.Options.with_api_key(api_key=ROBOT_API_KEY, api_key_id=ROBOT_API_KEY_ID)
+    return await RobotClient.at_address(ROBOT_ADDRESS, opts)
 
 
 async def get_puck_game_coordinates():

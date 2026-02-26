@@ -29,6 +29,20 @@ class PlayerID(IntEnum):
     RIGHT_D    = 3
     LEFT_D     = 4
 
+    def get_prefix(self) -> str:
+      match self:
+        case 0:
+          return "center-"
+        case 1:
+          return ""
+        case 2:
+          return "left-wing-"
+        case 3:
+          return "right-d-"
+        case 4:
+          return "left-d"
+      raise ValueError(f'Do not know prefix for position {self}')
+
 
 # ============================================================
 #  Scale & field dimensions

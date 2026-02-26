@@ -2,8 +2,7 @@ from viam.robot.client import RobotClient
 from viam.components.motor import Motor
 
 from .const import (
-    EXEC_ROBOT_ADDRESS, EXEC_API_KEY, EXEC_API_KEY_ID,
-    EXEC2_ROBOT_ADDRESS, EXEC2_API_KEY, EXEC2_API_KEY_ID,
+    ROBOT_ADDRESS, ROBOT_API_KEY, ROBOT_API_KEY_ID,
     MOTOR2_REVS_MIN, MOTOR2_REVS_MAX, MOTOR2_RPM_MAX,
     MOTOR1_REVS_SCALE, MOTOR1_RPM_MAX,
     RW_SLIDE_REVS_MIN, RW_SLIDE_REVS_MAX,
@@ -35,10 +34,7 @@ def _reverse_action(action):
 
 
 def _robot_credentials(player_id):
-    """Return (address, api_key, api_key_id) for the given player's robot."""
-    if player_id == PlayerID.RIGHT_WING:
-        return EXEC2_ROBOT_ADDRESS, EXEC2_API_KEY, EXEC2_API_KEY_ID
-    return EXEC_ROBOT_ADDRESS, EXEC_API_KEY, EXEC_API_KEY_ID
+    return ROBOT_ADDRESS, ROBOT_API_KEY, ROBOT_API_KEY_ID
 
 
 async def execute_best_action(action, player_id=PlayerID.CENTER):
@@ -54,8 +50,9 @@ async def execute_best_action(action, player_id=PlayerID.CENTER):
     # Connect to robot
     opts = RobotClient.Options.with_api_key(api_key=api_key, api_key_id=api_key_id)
     robot = await RobotClient.at_address(address, opts)
-    motor_move = Motor.from_robot(robot=robot, name="motor-movement")
-    motor_rot  = Motor.from_robot(robot=robot, name="motor-rotation")
+    part_prefix = player_id.get_prefix()
+    motor_move = Motor.from_robot(robot=robot, name= part_prefix + "motor-movement")
+    motor_rot  = Motor.from_robot(robot=robot, name= part_prefix + "motor-rotation")
 
     scale = _scale_action_right_wing if player_id == PlayerID.RIGHT_WING else _scale_action_center
 
