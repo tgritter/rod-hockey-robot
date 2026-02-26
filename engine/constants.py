@@ -3,7 +3,7 @@ Field dimensions, player positions, zone boundaries, and target coordinates
 for the bubble hockey robot.
 
 All pixel values assume SCALE = 25 px/inch.
-Field is 18 × 31.5 inches → 450 × 787.5 px.
+Field is 18 × 33.5 inches → 450 × 837.5 px.
 
 Target index reference (used by scoring and search functions):
   0  — Center red box       (goal-scoring zone)
@@ -38,7 +38,7 @@ SCALE = 25  # pixels per inch
 
 # Physical field size
 WIDTH  = 18   * SCALE   # 450 px
-HEIGHT = 31.5 * SCALE   # 787.5 px
+HEIGHT = 33.5 * SCALE   # 837.5 px
 
 # Physical constants (inches → pixels)
 GOAL_WIDTH                = 3.75 * SCALE
@@ -74,7 +74,7 @@ max_y_center = 24.5 * SCALE    # 612.5 px
 center_x     = 8    * SCALE    # 200 px
 
 # Right Wing
-min_y_right_wing = 15 * SCALE   # 375 px
+min_y_right_wing = 14.5 * SCALE   # 362.5 px
 max_y_right_wing = 31 * SCALE   # 775 px
 right_wing_x     = 2  * SCALE   # 50 px
 

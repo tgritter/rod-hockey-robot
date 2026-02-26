@@ -29,12 +29,17 @@ def draw_field(screen):
 
     # Center line and face-off circle
     center_y = HEIGHT / 2
-    pygame.draw.line(screen, BLACK, (0, center_y), (WIDTH, center_y), 2)
+    pygame.draw.line(screen, RED, (0, center_y), (WIDTH, center_y), 3)
     pygame.draw.circle(screen, BLACK, (WIDTH / 2, center_y), SCALE * 2, 2)
 
     # Goal lines
-    pygame.draw.line(screen, RED, (0, TOP_GOAL_Y), (WIDTH, TOP_GOAL_Y), 2)
-    pygame.draw.line(screen, RED, (0, BOTTOM_GOAL_Y + SCALE / 2), (WIDTH, BOTTOM_GOAL_Y + SCALE / 2), 2)
+    pygame.draw.line(screen, BLACK, (0, TOP_GOAL_Y), (WIDTH, TOP_GOAL_Y), 2)
+    pygame.draw.line(screen, BLACK, (0, BOTTOM_GOAL_Y + SCALE / 2), (WIDTH, BOTTOM_GOAL_Y + SCALE / 2), 2)
+
+    # Reference lines at 13" and 20.5"
+    LIGHT_BLUE = (100, 180, 255)
+    pygame.draw.line(screen, LIGHT_BLUE, (0, int(13 * SCALE)),   (WIDTH, int(13 * SCALE)),   3)
+    pygame.draw.line(screen, LIGHT_BLUE, (0, int(20.5 * SCALE)), (WIDTH, int(20.5 * SCALE)), 3)
 
     # Goal nets (4-slot grid)
     goal_x = WIDTH / 2 - GOAL_WIDTH / 2

@@ -41,6 +41,7 @@ from .constants import (
     RIGHT_D_ZONE_MID_Y,
     LEFT_D_ZONE1_MAX_Y, LEFT_D_ZONE2_MAX_Y,
     max_y_right_wing, right_wing_x,
+    center_x,
 )
 from .entities import players, CurvedPlayer, Puck
 
@@ -370,9 +371,8 @@ def plan_action(puck_x, puck_y):
         else:
             print("  Moving puck into scoring zone")
             action = find_best_action_for_player(puck_x, puck_y, chosen, 0)
-
         if action:
-            action[0] = min(1.0, action[0] + 0.1)
+            action[1] = -1.0 if puck_x < center_x else 1.0
 
     elif chosen == PlayerID.RIGHT_WING:
         if puck_y < RIGHT_WING_ZONE1_MAX_Y:
@@ -385,8 +385,6 @@ def plan_action(puck_x, puck_y):
             print("  Zone 3 → center of zone 2")
             target_idx = 6
         action = find_best_action_for_player(puck_x, puck_y, chosen, target_idx)
-        if action:
-            action[0] = min(1.0, action[0] + 0.1)
 
     elif chosen == PlayerID.RIGHT_D:
         if puck_y < RIGHT_D_ZONE_MID_Y:
