@@ -10,7 +10,7 @@ from .const import (
 
 def _scale_action(action):
     """Convert a normalized action vector [0..1] to physical motor parameters."""
-    m2_revs = MOTOR2_REVS_MIN + action[0] * (MOTOR2_REVS_MAX - MOTOR2_REVS_MIN)
+    m2_revs = -(MOTOR2_REVS_MIN + action[0] * (MOTOR2_REVS_MAX - MOTOR2_REVS_MIN))
     m2_rpm  = action[1] * MOTOR2_RPM_MAX
     m1_revs = action[2] * -1 * MOTOR1_REVS_SCALE
     m1_rpm  = action[3] * MOTOR1_RPM_MAX
@@ -49,3 +49,17 @@ async def execute_best_action(action):
     await motor1.go_for(rpm=m1_rpm_r, revolutions=m1_revs_r)
 
     print("Done.")
+
+
+# --- Standalone test ---
+if __name__ == '__main__':
+    import asyncio
+    import sys
+
+    if len(sys.argv) != 5:
+        print("Usage: python -m robot.execution <slide> <slide_rpm> <rotate> <rotate_rpm>")
+        print("  Each value is normalized 0..1  (e.g. 0.5 0.5 0.5 0.5)")
+        sys.exit(1)
+
+    action = [float(v) for v in sys.argv[1:5]]
+    asyncio.run(execute_best_action(action))

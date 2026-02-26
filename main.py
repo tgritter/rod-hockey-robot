@@ -8,10 +8,13 @@ Pipeline:
 """
 
 import asyncio
+import pygame
 
 from robot.vision import get_puck_game_coordinates
 from engine.planner import plan_action
 from robot.execution import execute_best_action
+from engine.display import visualize_single_episode
+from engine.constants import WIDTH, HEIGHT
 
 
 async def main():
@@ -31,7 +34,15 @@ async def main():
 
     print(f"Action found via {player.name}: {[f'{v:.3f}' for v in action]}")
 
-    # 3. Execute — send the action to the robot motors
+    # 3. Visualize — show the planned action in a pygame window
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Bubble Hockey — Planned Action")
+    clock = pygame.time.Clock()
+    visualize_single_episode(action, puck_x, puck_y, player.value, screen, clock)
+    pygame.quit()
+
+    # 4. Execute — send the action to the robot motors
     await execute_best_action(action)
 
 

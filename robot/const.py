@@ -3,14 +3,14 @@
 # ============================================================
 
 # Vision system runs on the MacBook
-VISION_ROBOT_ADDRESS = 'bubble-hockey-macbook.8dfgn52n2e.viam.cloud'
-VISION_API_KEY       = '2axyuerwf9mns7s2wg57ez1bi1d7135n'
-VISION_API_KEY_ID    = 'f982cb86-7fe9-4ec3-857c-2e9d43c921b8'
+VISION_ROBOT_ADDRESS = 'vision-main.wpth7nhx2w.viam.cloud'
+VISION_API_KEY       = 'gc81nfdx1kgokgipl4hu0lcvylob6to0'
+VISION_API_KEY_ID    = '40bca621-0c69-4367-b566-c7d58625300e'
 
 # Motor control runs on the Pi
-EXEC_ROBOT_ADDRESS = 'bubble-hockey-pi.8dfgn52n2e.viam.cloud'
-EXEC_API_KEY       = 'wqcwp98a0ufcgp4xlq6wlaj2q6fq0swu'
-EXEC_API_KEY_ID    = '5b00b4f5-d4d4-49a4-a1e1-bb6e90e16e50'
+EXEC_ROBOT_ADDRESS = 'rig2-main.wpth7nhx2w.viam.cloud'
+EXEC_API_KEY       = '9q2hqp884rvbhuo53g229pni5pqzl9dg'
+EXEC_API_KEY_ID    = '2593b412-0ea9-4881-830b-f790c6f6a2c8'
 
 
 # ============================================================
