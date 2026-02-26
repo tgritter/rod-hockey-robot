@@ -44,19 +44,13 @@ The robot uses a camera to detect the puck position, runs a physics-based simula
 
 ## Setup
 
-1. Activate the virtual environment:
+1. Install dependencies with `uv`:
 
 ```bash
-source venv/bin/activate
+uv sync
 ```
 
-2. Install dependencies:
-
-```bash
-pip install pygame viam-sdk
-```
-
-3. Configure credentials, camera bounds, and motor constants in `robot/const.py`
+2. Configure credentials, camera bounds, and motor constants in `robot/const.py`
 
 ## Usage
 
