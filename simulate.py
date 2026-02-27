@@ -80,7 +80,7 @@ def run_loop(start_x, start_y, headless=False):
         shot_num += 1
         print(f"\n=== Shot {shot_num} — puck at ({puck_x:.1f}, {puck_y:.1f}) ===")
 
-        action, player_idx = plan_action(puck_x, puck_y)
+        action, player_idx, stickhandle = plan_action(puck_x, puck_y)
         if action is None:
             print("No player can reach the puck. Stopping.")
             break
@@ -93,7 +93,7 @@ def run_loop(start_x, start_y, headless=False):
             print(f"Puck ended at ({final_x:.1f}, {final_y:.1f}) — waiting 5 seconds...")
             time.sleep(5)
         else:
-            final_x, final_y = visualize_single_episode(action, puck_x, puck_y, player_idx, screen, clock)
+            final_x, final_y = visualize_single_episode(action, puck_x, puck_y, player_idx, screen, clock, stickhandle=stickhandle)
             print(f"Puck ended at ({final_x:.1f}, {final_y:.1f}) — waiting 3 seconds...")
 
             pause_start = pygame.time.get_ticks()
@@ -127,7 +127,7 @@ if args.loop:
     run_loop(puck_x, puck_y, headless=args.headless)
 else:
     print(f"Puck: ({puck_x}, {puck_y})")
-    action, chosen = plan_action(puck_x, puck_y)
+    action, chosen, stickhandle = plan_action(puck_x, puck_y)
     if action is None:
         if not args.headless:
             pygame.quit()
@@ -137,5 +137,5 @@ else:
         _, _, final_x, final_y, _ = simulate_action_for_player(action, puck_x, puck_y, chosen, 0)
         print(f"Puck ended at ({final_x:.1f}, {final_y:.1f})")
     else:
-        visualize_single_episode(action, puck_x, puck_y, chosen, screen, clock)
+        visualize_single_episode(action, puck_x, puck_y, chosen, screen, clock, stickhandle=stickhandle)
         pygame.quit()

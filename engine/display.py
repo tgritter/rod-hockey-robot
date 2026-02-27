@@ -116,12 +116,12 @@ def draw_field(screen):
                 pygame.draw.line(screen, (0, 0, 255), (box_x, line_y), (box_x + box_w, line_y), 3)
 
 
-def visualize_single_episode(action, puck_x, puck_y, player_idx, screen, clock):
+def visualize_single_episode(action, puck_x, puck_y, player_idx, screen, clock, stickhandle=False):
     """Play out one action in the pygame window and return the final puck position."""
     episode_timer    = 0
     episode_duration = 120  # frames (~2 seconds at 60 fps)
 
-    players[player_idx].do_action(action)
+    players[player_idx].do_action(action, stickhandle=stickhandle)
     puck = Puck(x=puck_x, y=puck_y)
 
     while True:

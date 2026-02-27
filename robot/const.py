@@ -44,5 +44,6 @@ RW_SLIDE_REVS_MIN = 0.1
 RW_SLIDE_REVS_MAX = -4.45
 
 # Motor 1: rotation. Scaled by a fixed gear ratio and max RPM.
-MOTOR1_REVS_SCALE = 2 / 3   # ~0.6667
-MOTOR1_RPM_MAX    = 3000
+MOTOR1_REVS_SCALE    = 2 / 3   # ~0.6667
+MOTOR1_RPM_MAX       = 1000
+RW_SPIN_RPM_MAX      = 500

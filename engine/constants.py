@@ -58,7 +58,7 @@ HEIGHT = 33.5 * SCALE   # 837.5 px
 GOAL_WIDTH                = 3.75 * SCALE
 HALF_FIELD_LENGTH         = 16.75 * SCALE
 PLAYER_DIAMETER           = 1    * SCALE
-STICK_LENGTH              = 1.75 * SCALE
+STICK_LENGTH              = 1.0  * SCALE
 PUCK_DIAMETER             = 1    * SCALE
 PLAYER_MIN_DIST_FROM_GOAL = 4    * SCALE
 BEHIND_GOAL_SPACE         = 5.5  * SCALE
@@ -110,8 +110,8 @@ left_d_x     = 13  * SCALE   # 325 px
 # Center red box  (target_idx 0)
 TARGET_X_MIN = 160
 TARGET_X_MAX = 270
-TARGET_Y_MIN = 530
-TARGET_Y_MAX = 600
+TARGET_Y_MIN = int(20.5 * SCALE)   # 512 px — at the blue line
+TARGET_Y_MAX = 620
 
 # Left Wing red box  (target_idx 1)
 TARGET_X_MIN_P2 = 10

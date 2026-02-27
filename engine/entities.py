@@ -60,10 +60,15 @@ class Player:
         progress = max(0.0, min(1.0, (y - self.min_y) / movement_range))
         return self.start_x + progress * SCALE * 1.0
 
-    def do_action(self, action):
+    def do_action(self, action, stickhandle=False):
         """Apply a normalized action vector [linear_dist, rotation_angle, rotation_speed].
 
         Linear speed is always 1.0 (maximum).
+
+        Stickhandle sequence (3 phases):
+          1. Spin 0.25 revs to horizontal
+          2. Slide laterally
+          3. Spin 0.6 motor-revs to push puck aside (= 1.8π rad in simulation)
         """
         linear_distance, rotation_angle, rotation_speed = action
         linear_speed = 1.0
@@ -72,43 +77,97 @@ class Player:
         self.x = self.start_x
         self.y = self.min_y
         self.angle = -math.pi / 2
+        self.stickhandle_phase = 0
         if not self.is_goalie:
             if linear_speed > 0:
                 movement_range = self.max_y - self.min_y
                 self.movement_speed = linear_speed * self.max_linear_speed
                 target_y = self.min_y + linear_distance * movement_range
-                self.target_y = max(self.min_y + self.radius,
-                                    min(self.max_y - self.radius, target_y))
-                self.target_x = self.get_x_for_y(self.target_y)
+                final_target_y = max(self.min_y + self.radius,
+                                     min(self.max_y - self.radius, target_y))
+                self.target_x = self.get_x_for_y(final_target_y)
+                self.target_y = final_target_y
             if rotation_speed > 0:
                 self.rotation_speed = rotation_speed * self.max_rotation_speed
                 self.target_angle = self.angle + rotation_angle * 2 * math.pi
+            if stickhandle:
+                # Phase 1: pre-spin 0.25 revs to horizontal
+                pre_spin_angle = self.angle + rotation_angle * 0.5 * math.pi
+                self.stickhandle_phase = 1
+                self.stickhandle_pre_spin_angle  = pre_spin_angle
+                self.stickhandle_final_target_y  = final_target_y
+                # Phase 3: end spin = 0.6 motor-revs = 1.8π sim-radians
+                self.stickhandle_end_angle = pre_spin_angle + rotation_angle * 1.8 * math.pi
+                self.target_angle = pre_spin_angle  # start with pre-spin target
             self.movement_in_progress = True
             self.position_reached = False
         return self.x, self.y, self.angle
 
     def update(self):
-        """Advance one frame: slide to target y, then rotate the stick."""
+        """Advance one frame.
+
+        Normal mode:   slide to target y → rotate stick.
+        Stickhandle:   phase 1 (pre-spin 0.25 rev) → phase 2 (slide) → phase 3 (end spin 0.6 rev).
+        """
         if not self.is_goalie and self.movement_in_progress:
             move_speed = getattr(self, 'movement_speed', 0)
             rot_speed  = getattr(self, 'rotation_speed', 0)
-            if not self.position_reached:
+            phase      = getattr(self, 'stickhandle_phase', 0)
+
+            if phase == 0:
+                # Normal: slide first, then rotate
+                if not self.position_reached:
+                    if abs(self.y - self.target_y) > move_speed:
+                        self.y += (1 if self.target_y > self.y else -1) * move_speed
+                        self.x = self.get_x_for_y(self.y)
+                    else:
+                        self.y = self.target_y
+                        self.x = self.get_x_for_y(self.y)
+                        self.position_reached = True
+                elif abs(self.angle - self.target_angle) > rot_speed:
+                    self.angle += (1 if self.target_angle > self.angle else -1) * rot_speed
+                    self.has_rotated = True
+                else:
+                    self.angle = self.target_angle
+                    self.movement_in_progress = False
+                    self.position_reached = False
+                    if self.angle != -math.pi / 2:
+                        self.has_rotated = True
+
+            elif phase == 1:
+                # Stickhandle phase 1: pre-spin 0.25 revs
+                if abs(self.angle - self.target_angle) > rot_speed:
+                    self.angle += (1 if self.target_angle > self.angle else -1) * rot_speed
+                    self.has_rotated = True
+                else:
+                    self.angle = self.target_angle
+                    self.stickhandle_phase = 2
+                    self.target_y = self.stickhandle_final_target_y
+                    self.target_x = self.get_x_for_y(self.target_y)
+
+            elif phase == 2:
+                # Stickhandle phase 2: lateral slide
                 if abs(self.y - self.target_y) > move_speed:
                     self.y += (1 if self.target_y > self.y else -1) * move_speed
                     self.x = self.get_x_for_y(self.y)
                 else:
                     self.y = self.target_y
                     self.x = self.get_x_for_y(self.y)
-                    self.position_reached = True
-            elif abs(self.angle - self.target_angle) > rot_speed:
-                self.angle += (1 if self.target_angle > self.angle else -1) * rot_speed
-                self.has_rotated = True
-            else:
-                self.angle = self.target_angle
-                self.movement_in_progress = False
-                self.position_reached = False
-                if self.angle != -math.pi / 2:
+                    self.stickhandle_phase = 3
+                    self.target_angle = self.stickhandle_end_angle
+
+            elif phase == 3:
+                # Stickhandle phase 3: end spin 0.6 motor-revs
+                if abs(self.angle - self.target_angle) > rot_speed:
+                    self.angle += (1 if self.target_angle > self.angle else -1) * rot_speed
                     self.has_rotated = True
+                else:
+                    self.angle = self.target_angle
+                    self.stickhandle_phase = 0
+                    self.movement_in_progress = False
+                    if self.angle != -math.pi / 2:
+                        self.has_rotated = True
+
         return self.x, self.y, self.angle
 
     def draw(self, screen):

@@ -27,7 +27,7 @@ async def main():
     print(f"Puck detected at game coordinates: x={puck_x:.1f}, y={puck_y:.1f}")
 
     # 2. Plan — find the best action for the detected puck position
-    action, player = plan_action(puck_x, puck_y)
+    action, player, stickhandle = plan_action(puck_x, puck_y)
     if action is None:
         print("No action found — puck may be out of range.")
         return
@@ -39,11 +39,11 @@ async def main():
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Bubble Hockey — Planned Action")
     clock = pygame.time.Clock()
-    visualize_single_episode(action, puck_x, puck_y, player.value, screen, clock)
+    visualize_single_episode(action, puck_x, puck_y, player.value, screen, clock, stickhandle=stickhandle)
     pygame.quit()
 
     # 4. Execute — send the action to the robot motors
-    await execute_best_action(action, player)
+    await execute_best_action(action, player, stickhandle=stickhandle)
 
 
 if __name__ == "__main__":
