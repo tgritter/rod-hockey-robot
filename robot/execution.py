@@ -24,8 +24,8 @@ async def execute_sequence(sequence, player_id=PlayerID.CENTER):
     opts = RobotClient.Options.with_api_key(api_key=api_key, api_key_id=api_key_id)
     robot = await RobotClient.at_address(address, opts)
     part_prefix = player_id.get_prefix()
-    motor_move = Motor.from_robot(robot=robot, name=part_prefix + "motor-movement")
-    motor_rot  = Motor.from_robot(robot=robot, name=part_prefix + "motor-rotation")
+    motor_move = Motor.from_robot(robot=robot, name=part_prefix + "-movement")
+    motor_rot  = Motor.from_robot(robot=robot, name=part_prefix + "-rotation")
 
     net_move   = 0.0
     net_rotate = 0.0

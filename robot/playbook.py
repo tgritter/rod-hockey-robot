@@ -12,6 +12,7 @@ All values are placeholders — calibrate on hardware.
 from engine.constants import (
     PlayerID,
     center_x,
+    right_d_x,
     right_wing_x,
 )
 
@@ -121,6 +122,30 @@ def get_rw_sequence(side: str, action: str) -> list:
     return _RIGHT_WING_POSITIONS[side] + _RIGHT_WING_ACTIONS[action]
 
 
+# ── Right defenseman playbook ──────────────────────────────────────────────────
+#
+# Uses center motor. Simple rotate + move for now — calibrate on hardware.
+
+RIGHT_D_LEFT = [
+    ("rotate",  40,  30),    # TODO: open blade
+    ("move",   450, 120),    # TODO: slide to puck on left
+    ("rotate",  -80,  30),    # TODO: position blade
+    ("rotate",  160, 200),    # TODO: shot
+]
+
+RIGHT_D_RIGHT = [
+    ("rotate", -40,  30),    # TODO: open blade
+    ("move",   450, 120),    # TODO: slide to puck on right
+    ("rotate",  80,  30),    # TODO: position blade
+    ("rotate", -160, 200),    # TODO: shot
+]
+
+_RIGHT_D_PLAYBOOK = {
+    "left":  RIGHT_D_LEFT,
+    "right": RIGHT_D_RIGHT,
+}
+
+
 # ── Public API ─────────────────────────────────────────────────────────────────
 
 def _center_side(puck_x: float) -> str:
@@ -139,6 +164,11 @@ def get_instructions(puck_x: float, puck_y: float, player_id: PlayerID = PlayerI
         action = "shot"  # default; caller can override via get_rw_sequence directly
         print(f"Right wing side: {side}  (puck_x={puck_x:.0f})")
         return get_rw_sequence(side, action)
+
+    if player_id == PlayerID.RIGHT_D:
+        side = "right" if puck_x < right_d_x else "left"
+        print(f"Right D side: {side}  (puck_x={puck_x:.0f})")
+        return _RIGHT_D_PLAYBOOK[side]
 
     return None
  

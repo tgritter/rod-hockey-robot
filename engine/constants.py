@@ -32,15 +32,15 @@ class PlayerID(IntEnum):
     def get_prefix(self) -> str:
       match self:
         case 0:
-          return "center-"
+          return "center"
         case 1:
-          return ""
+          return "rightwing"
         case 2:
-          return "left-wing-"
+          return "leftwing"
         case 3:
-          return "right-d-"
+          return "center"  # temporary: right-d uses center motors
         case 4:
-          return "left-d"
+          return "leftd"
       raise ValueError(f'Do not know prefix for position {self}')
 
 
