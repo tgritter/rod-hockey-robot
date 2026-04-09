@@ -19,6 +19,8 @@ Manual override (skips vision — useful for calibration):
   python main.py --rw-pass --bottom-right
   python main.py --rd-left
   python main.py --rd-right
+  python main.py --ld-left
+  python main.py --ld-right
 
 Loop mode (polls vision every 2 seconds):
   python main.py --loop
@@ -29,7 +31,7 @@ import argparse
 import random
 
 from robot.vision import get_puck_game_coordinates
-from robot.playbook import get_instructions, get_rw_sequence, _CENTER_PLAYBOOK, _RIGHT_D_PLAYBOOK
+from robot.playbook import get_instructions, get_rw_sequence, _CENTER_PLAYBOOK, _RIGHT_D_PLAYBOOK, _LEFT_D_PLAYBOOK
 from robot.execution import execute_sequence
 from engine.constants import PlayerID, min_y_center, TARGET_Y_MAX, min_y_right_wing, max_y_right_wing, center_x, right_wing_x
 
@@ -52,6 +54,8 @@ def parse_args():
     group.add_argument("--rw-pass", action="store_true")
     group.add_argument("--rd-left",  action="store_true")
     group.add_argument("--rd-right", action="store_true")
+    group.add_argument("--ld-left",  action="store_true")
+    group.add_argument("--ld-right", action="store_true")
 
     return parser.parse_args()
 
@@ -81,6 +85,8 @@ async def run_once(args):
     if args.rw_pass: player = PlayerID.RIGHT_WING; sequence = get_rw_sequence(_rw_side(args), _rw_action(args, "pass"))
     if args.rd_left:  player = PlayerID.RIGHT_D; sequence = _RIGHT_D_PLAYBOOK["left"]
     if args.rd_right: player = PlayerID.RIGHT_D; sequence = _RIGHT_D_PLAYBOOK["right"]
+    if args.ld_left:  player = PlayerID.LEFT_D;  sequence = _LEFT_D_PLAYBOOK["left"]
+    if args.ld_right: player = PlayerID.LEFT_D;  sequence = _LEFT_D_PLAYBOOK["right"]
 
     if sequence:
         print(f"Manual override: player={player.name}")

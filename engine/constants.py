@@ -40,7 +40,7 @@ class PlayerID(IntEnum):
         case 3:
           return "center"  # temporary: right-d uses center motors
         case 4:
-          return "leftd"
+          return "center"  # temporary: left-d uses center motors
       raise ValueError(f'Do not know prefix for position {self}')
 
 

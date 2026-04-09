@@ -12,6 +12,7 @@ All values are placeholders — calibrate on hardware.
 from engine.constants import (
     PlayerID,
     center_x,
+    left_d_x,
     right_d_x,
     right_wing_x,
 )
@@ -146,6 +147,30 @@ _RIGHT_D_PLAYBOOK = {
 }
 
 
+# ── Left defenseman playbook ───────────────────────────────────────────────────
+#
+# Uses center motor. Simple rotate + move for now — calibrate on hardware.
+
+LEFT_D_LEFT = [
+    ("rotate",  40,  30),    # TODO: open blade
+    ("move",   850, 200),    # TODO: slide to puck on left
+    ("rotate",  -80,  30),   # TODO: position blade
+    ("rotate",  160, 200),   # TODO: shot
+]
+
+LEFT_D_RIGHT = [
+    ("rotate", -40,  30),    # TODO: open blade
+    ("move",   850, 200),    # TODO: slide to puck on right
+    ("rotate",  80,  30),    # TODO: position blade
+    ("rotate", -160, 200),   # TODO: shot
+]
+
+_LEFT_D_PLAYBOOK = {
+    "left":  LEFT_D_LEFT,
+    "right": LEFT_D_RIGHT,
+}
+
+
 # ── Public API ─────────────────────────────────────────────────────────────────
 
 def _center_side(puck_x: float) -> str:
@@ -169,6 +194,11 @@ def get_instructions(puck_x: float, puck_y: float, player_id: PlayerID = PlayerI
         side = "right" if puck_x < right_d_x else "left"
         print(f"Right D side: {side}  (puck_x={puck_x:.0f})")
         return _RIGHT_D_PLAYBOOK[side]
+
+    if player_id == PlayerID.LEFT_D:
+        side = "right" if puck_x < left_d_x else "left"
+        print(f"Left D side: {side}  (puck_x={puck_x:.0f})")
+        return _LEFT_D_PLAYBOOK[side]
 
     return None
  
