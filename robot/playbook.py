@@ -153,17 +153,19 @@ _RIGHT_D_PLAYBOOK = {
 # Uses center motor. Simple rotate + move for now — calibrate on hardware.
 
 LEFT_D_LEFT = [
-    ("rotate",  40,  30),    # TODO: open blade
-    ("move",   850, 200),    # TODO: slide to puck on left
-    ("rotate",  -80,  30),   # TODO: position blade
-    ("rotate",  160, 200),   # TODO: shot
+    ("rotate",  -45,  30),    # open blade
+    ("move",   2000, 200),    # slide to puck on left
+    ("rotate",  80,  30),    # position blade
+    ("move",    60, 120),    # nudge forward before pass — tune
+    ("rotate", -120, 200),    # pass to center
 ]
 
 LEFT_D_RIGHT = [
-    ("rotate", -40,  30),    # TODO: open blade
-    ("move",   850, 200),    # TODO: slide to puck on right
-    ("rotate",  80,  30),    # TODO: position blade
-    ("rotate", -160, 200),   # TODO: shot
+    ("rotate",   60,  30),    # open blade
+    ("move",  2000, 200),    # slide to puck on right
+    ("rotate",  -80,  30),    # position blade
+    ("move",    60, 120),    # nudge forward before pass — tune
+    ("rotate",  120, 200),    # pass to center
 ]
 
 _LEFT_D_PLAYBOOK = {
