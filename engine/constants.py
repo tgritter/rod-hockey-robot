@@ -36,11 +36,11 @@ class PlayerID(IntEnum):
         case 1:
           return "rightwing"
         case 2:
-          return "leftwing"
+          return "leftwing-motor"
         case 3:
           return "center"  # temporary: right-d uses center motors
         case 4:
-          return "center"  # temporary: left-d uses center motors
+          return "leftdefense-motor"
       raise ValueError(f'Do not know prefix for position {self}')
 
 

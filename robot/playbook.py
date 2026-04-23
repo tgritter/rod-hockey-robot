@@ -179,10 +179,16 @@ _LEFT_D_PLAYBOOK = {
 # All values are placeholders — calibrate on hardware.
 
 LEFT_WING_LEFT = [
-    ("rotate",  40,  30),    # TODO: open blade
-    ("move",   450, 120),    # TODO: slide to puck on left
-    ("rotate", -80,  30),    # TODO: position blade
-    ("rotate", 160, 200),    # TODO: shot
+    ("rotate",  60,  30),    # TODO: open blade
+    ("move",   550, 120),    # TODO: slide to puck on left
+    ("rotate",  150,  30),    # TODO: open blade
+    ("move",   50, 120),    # TODO: slide to puck on left
+    ("rotate",  -40,  30),    # TODO: open blade
+    ("move",   -250, 120),    # TODO: slide to puck on left
+    ("move",   40, 120),    # TODO: slide to puck on left
+    ("rotate", -200,  1000),    # TODO: position blade
+    # ("move",   100, 120),    # TODO: slide to puck on left
+    # ("rotate", 160, 200),    # TODO: shot
 ]
 
 LEFT_WING_RIGHT = [
