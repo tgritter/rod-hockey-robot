@@ -23,9 +23,10 @@ async def execute_sequence(sequence, player_id=PlayerID.CENTER):
     address, api_key, api_key_id = _robot_credentials(player_id)
     opts = RobotClient.Options.with_api_key(api_key=api_key, api_key_id=api_key_id)
     robot = await RobotClient.at_address(address, opts)
-    part_prefix = player_id.get_prefix()
-    motor_move = Motor.from_robot(robot=robot, name=part_prefix + "-movement")
-    motor_rot  = Motor.from_robot(robot=robot, name=part_prefix + "-rotation")
+    # Each player picks its own motor names — see PlayerID.get_motor_names()
+    move_name, rot_name = player_id.get_motor_names()
+    motor_move = Motor.from_robot(robot=robot, name=move_name)
+    motor_rot  = Motor.from_robot(robot=robot, name=rot_name)
 
     net_move   = 0.0
     net_rotate = 0.0

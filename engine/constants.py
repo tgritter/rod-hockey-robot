@@ -29,19 +29,21 @@ class PlayerID(IntEnum):
     RIGHT_D    = 3
     LEFT_D     = 4
 
-    def get_prefix(self) -> str:
+    def get_motor_names(self):
+      # Returns (movement_motor, rotation_motor) as configured on the Viam machine.
+      # Each player picks its own naming since not all rods follow the same convention.
       match self:
         case 0:
-          return "center"
+          return "center-movement", "center-rotation"
         case 1:
-          return "rightwing"
+          return "rightwing-motor-movement", "rightwing-motor-rotation"
         case 2:
-          return "leftwing-motor"
+          return "leftwing-motor-movement", "leftwing-motor-rotation"
         case 3:
-          return "center"  # temporary: right-d uses center motors
+          return "right-motor-1a", "right-motor-2a"  # right-D: 1a=movement, 2a=rotation
         case 4:
-          return "leftdefense-motor"
-      raise ValueError(f'Do not know prefix for position {self}')
+          return "left-motor-2a", "left-motor-1a"  # left-D: 2a=movement, 1a=rotation
+      raise ValueError(f'Do not know motor names for position {self}')
 
 
 # ============================================================
