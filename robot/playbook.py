@@ -1,12 +1,16 @@
 """Calibrated instruction playbooks for each player.
 
-Instruction format: (motor, revs, rpm)
-  motor : "move"   — lateral slide  (motor-movement)
-          "rotate" — stick spin     (motor-rotation)
-  revs  : exact revolutions (negative = reverse direction)
-  rpm   : motor speed in RPM
+Each step is a dict matching the hockey-player module's DoCommand payload:
+  {"t": 0.5, "r": 90, "rpm": 30, "speed_mm_per_sec": 100}
 
-All values are placeholders — calibrate on hardware.
+Fields (all optional; omit to skip an axis or use config defaults):
+  t                 : translation target, normalized over [min_translation_mm,
+                      max_translation_mm]. Range [0, 1].
+  r                 : rotation target in degrees. Range [0, 360].
+  rpm               : rotation speed (defaults from component config).
+  speed_mm_per_sec  : translation speed (defaults from component config).
+
+All values below are placeholders -- calibrate on hardware.
 """
 
 from engine.constants import (
@@ -21,21 +25,14 @@ from engine.constants import (
 
 # ── Center player playbook ─────────────────────────────────────────────────────
 #
-# X-axis: right (puck_x < center_x, closer to 0) vs left (puck_x >= center_x)
-# Stickhandle approach: open blade → slide to puck → place → shot.
+# X-axis: right (puck_x < center_x, closer to 0) vs left (puck_x >= center_x).
 
 CENTER_LEFT = [
-    ("rotate",   40,   30),
-    ("move",    450,  120),
-    ("rotate",   40,   30),
-    ("rotate", -300,  200),
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- center, puck on left
 ]
 
 CENTER_RIGHT = [
-    ("rotate",  -50,   30),
-    ("move",    450,  120),
-    ("rotate",  -36,   30),
-    ("rotate",  300,  200),
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- center, puck on right
 ]
 
 _CENTER_PLAYBOOK = {
@@ -47,61 +44,40 @@ _CENTER_PLAYBOOK = {
 # ── Right wing playbook ────────────────────────────────────────────────────────
 #
 # Two-phase: position sequence + action sequence, concatenated at runtime.
-# e.g. RIGHT_WING_LEFT + RIGHT_WING_SHOT
+# e.g. RIGHT_WING_LEFT + RIGHT_WING_SHOT.
 
-# Position sequences — move puck to sweet spot
+# Position sequences -- move puck to sweet spot
 RIGHT_WING_LEFT = [
-    ("rotate",   40,   30),    # TODO: open blade
-    ("move",    450,  120),    # TODO: slide to puck on left
-    # ("rotate",  -40,   30),    # TODO: position blade
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right wing position, puck on left
 ]
 
 RIGHT_WING_RIGHT = [
-    ("rotate",   -40,   30),    # TODO: open blade
-    ("move",    420,  120),    # TODO: slide to puck on right
-    ("rotate",   -35,   30),    # TODO: open blade
-    ("rotate",  115,   30),    # TODO: position blade
-    ("move",    30,  120),    # TODO: slide to puck on right
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right wing position, puck on right
 ]
 
 RIGHT_WING_BOTTOM_LEFT = [
-    ("rotate",   -40,   30),    # TODO: open blade
-    ("move",    825,  120),    # TODO: slide to puck on left
-    ("rotate",  -75,   30),    # TODO: position blade
-    ("move",    -400,  120),    # TODO: slide to puck on left
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right wing position, puck bottom-left
 ]
 
 RIGHT_WING_BOTTOM_RIGHT = [
-    ("rotate",   40,   30),    # TODO: open blade
-    ("move",    825,  120),    # TODO: slide to puck on left
-    ("rotate",  70,   30),    # TODO: position blade
-    ("move",    -400,  120),    # TODO: slide to puck on left
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right wing position, puck bottom-right
 ]
 
-# Action sequences — execute the play
+# Action sequences -- execute the play
 RIGHT_WING_SHOT = [
-    ("rotate", -148,   30),    # reposition blade
-    ("rotate",  400, 1000),    # shot
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right wing shot
 ]
 
 RIGHT_WING_PASS = [
-    ("move",    -20,  120),    # back off
-    ("rotate", -300,  135),    # pass
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right wing pass
 ]
 
 RIGHT_WING_BOTTOM_SHOT = [
-    ("rotate", 40,  30),    # pass
-    ("move",    20,  50),    # back off
-    # ("rotate", -148,   30),    # reposition blade
-    ("rotate",  -110, 100),    # shot
-    # ("move",    -30,  50),    # back off
-    #    ("move",    -20,  50),    # back off
-    ("rotate",  150, 200),    # shot
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right wing bottom shot
 ]
 
 RIGHT_WING_BOTTOM_PASS = [
-    ("move",    -20,  120),    # back off
-    ("rotate", -300,  135),    # pass
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right wing bottom pass
 ]
 
 _RIGHT_WING_POSITIONS = {
@@ -125,21 +101,13 @@ def get_rw_sequence(side: str, action: str) -> list:
 
 
 # ── Right defenseman playbook ──────────────────────────────────────────────────
-#
-# Uses center motor. Simple rotate + move for now — calibrate on hardware.
 
 RIGHT_D_LEFT = [
-    ("rotate",  40,  30),    # TODO: open blade
-    ("move",   450, 120),    # TODO: slide to puck on left
-    ("rotate",  -80,  30),    # TODO: position blade
-    ("rotate",  160, 200),    # TODO: shot
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right D, puck on left
 ]
 
 RIGHT_D_RIGHT = [
-    ("rotate", -40,  30),    # TODO: open blade
-    ("move",   450, 120),    # TODO: slide to puck on right
-    ("rotate",  80,  30),    # TODO: position blade
-    ("rotate", -160, 200),    # TODO: shot
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right D, puck on right
 ]
 
 _RIGHT_D_PLAYBOOK = {
@@ -149,23 +117,13 @@ _RIGHT_D_PLAYBOOK = {
 
 
 # ── Left defenseman playbook ───────────────────────────────────────────────────
-#
-# Uses center motor. Simple rotate + move for now — calibrate on hardware.
 
 LEFT_D_LEFT = [
-    ("rotate",  -45,  30),    # open blade
-    ("move",   2000, 200),    # slide to puck on left
-    ("rotate",  80,  30),    # position blade
-    ("move",    60, 120),    # nudge forward before pass — tune
-    ("rotate", -120, 200),    # pass to center
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- left D, puck on left (pass to center)
 ]
 
 LEFT_D_RIGHT = [
-    ("rotate",   60,  30),    # open blade
-    ("move",  2000, 200),    # slide to puck on right
-    ("rotate",  -80,  30),    # position blade
-    ("move",    60, 120),    # nudge forward before pass — tune
-    ("rotate",  120, 200),    # pass to center
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- left D, puck on right (pass to center)
 ]
 
 _LEFT_D_PLAYBOOK = {
@@ -174,30 +132,16 @@ _LEFT_D_PLAYBOOK = {
 }
 
 
-# ── Left wing playbook ───────────────────────────────────────────────────────
+# ── Left wing playbook ─────────────────────────────────────────────────────────
 #
-# Own motors (leftwing-movement, leftwing-rotation).
 # Zones are 2D (x + y), but playbook uses simple left/right for now.
-# All values are placeholders — calibrate on hardware.
 
 LEFT_WING_LEFT = [
-    ("rotate",  60,  30),    # TODO: open blade
-    ("move",   550, 120),    # TODO: slide to puck on left
-    ("rotate",  150,  30),    # TODO: open blade
-    ("move",   50, 120),    # TODO: slide to puck on left
-    ("rotate",  -40,  30),    # TODO: open blade
-    ("move",   -250, 120),    # TODO: slide to puck on left
-    ("move",   40, 120),    # TODO: slide to puck on left
-    ("rotate", -200,  1000),    # TODO: position blade
-    # ("move",   100, 120),    # TODO: slide to puck on left
-    # ("rotate", 160, 200),    # TODO: shot
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- left wing, puck on left
 ]
 
 LEFT_WING_RIGHT = [
-    ("rotate", -40,  30),    # TODO: open blade
-    ("move",   450, 120),    # TODO: slide to puck on right
-    ("rotate",  80,  30),    # TODO: position blade
-    ("rotate",-160, 200),    # TODO: shot
+    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- left wing, puck on right
 ]
 
 _LEFT_WING_PLAYBOOK = {
@@ -209,7 +153,7 @@ _LEFT_WING_PLAYBOOK = {
 # ── Public API ─────────────────────────────────────────────────────────────────
 
 def _center_side(puck_x: float) -> str:
-    return "right" if puck_x < center_x else "left"   # x closer to 0 = right
+    return "right" if puck_x < center_x else "left"  # x closer to 0 = right
 
 
 def get_instructions(puck_x: float, puck_y: float, player_id: PlayerID = PlayerID.CENTER):  # noqa: ARG001
@@ -241,20 +185,3 @@ def get_instructions(puck_x: float, puck_y: float, player_id: PlayerID = PlayerI
         return _LEFT_WING_PLAYBOOK[side]
 
     return None
- 
- 
- 
-# RIGHT_WING_PASS = [
-#     ("rotate",  0.2,   30),    # TODO: open blade to horizontal
-#     ("move",    2.25, 120),    # TODO: slide to puck
-#     ("move",   -0.1,  120),    # TODO: back off
-#     ("rotate", -1.5,  135),    # TODO: pass
-# ]
-
-# RIGHT_WING_SHOT = [
-#     ("rotate",  0.2,   30),    # TODO: open blade to horizontal
-#     ("move",    2.1,  120),    # TODO: slide to puck
-#     ("rotate", -0.74,   30),    # TODO: reposition blade
-#     # ("move",    0.25, 120),    # TODO: back off
-#     ("rotate",  2.0, 1000),    # shot
-# ]
