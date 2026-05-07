@@ -1,9 +1,11 @@
-"""Ad-hoc: drive every hockey player to t=0, then to t=1 with r=180, concurrently.
+"""Ad-hoc: drive every hockey player to a given (t, r) concurrently.
 
-Run:  python move_all_t1_r180.py
+Usage:  python move.py <t> <r>
+Example: python move.py 0.5 90
 """
 
 import asyncio
+import sys
 from viam.robot.client import RobotClient
 from viam.components.generic import Generic
 from robot.const import ROBOT_ADDRESS, ROBOT_API_KEY, ROBOT_API_KEY_ID
@@ -26,19 +28,23 @@ async def move_one(robot, name, payload):
         print(f"  {name}: {payload} FAILED -- {type(e).__name__}: {e}")
 
 
-async def main():
+async def main(t, r):
+    payload = {"t": t, "r": r}
     opts = RobotClient.Options.with_api_key(
         api_key=ROBOT_API_KEY, api_key_id=ROBOT_API_KEY_ID,
     )
     robot = await RobotClient.at_address(ROBOT_ADDRESS, opts)
     try:
-        print("--- Moving all to t=0 (concurrent) ---")
-        await asyncio.gather(*[move_one(robot, n, {"t": 0.0}) for n in PLAYERS])
-        print("--- Moving all to t=1, r=180 (concurrent) ---")
-        await asyncio.gather(*[move_one(robot, n, {"t": 1.0, "r": 180}) for n in PLAYERS])
+        print(f"--- Moving all to {payload} (concurrent) ---")
+        await asyncio.gather(*[move_one(robot, n, payload) for n in PLAYERS])
     finally:
         await robot.close()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    if len(sys.argv) != 3:
+        print("Usage: python move.py <t> <r>", file=sys.stderr)
+        sys.exit(2)
+    t = float(sys.argv[1])
+    r = float(sys.argv[2])
+    asyncio.run(main(t, r))
