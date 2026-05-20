@@ -35,6 +35,7 @@ async def execute_sequence(sequence, player_id=PlayerID.CENTER):
         player = Generic.from_robot(robot=robot, name=component_name)
         for step in sequence:
             await player.do_command(step)
+        await player.do_command({"t": 0, "r": 0})
     finally:
         await robot.close()
 
