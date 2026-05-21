@@ -55,6 +55,7 @@ async def main():
     args = parser.parse_args()
 
     sequence = get_sequence(args.player, args.side, args.action)
+    print(sequence)
     player_id = _PLAYER_MAP[args.player]
 
     if args.player == "left_d" and args.side == "right":
