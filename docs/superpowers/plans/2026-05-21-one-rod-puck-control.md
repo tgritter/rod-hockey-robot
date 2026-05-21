@@ -412,11 +412,12 @@ def test_solve_inverts_the_jacobian():
     j = [[2.0, 0.1], [0.3, -1.5]]
     model = RodModel(_linear_samples(j))
     d_t, d_r, controllable = model.solve(0.5, 180.0, (270.0, 150.0),
-                                         d_puck_desired=(4.0, -6.0))
-    # Applying the solved move should reproduce the desired puck displacement.
+                                         d_puck_desired=(0.2, -0.3))
+    # The desired displacement is small enough that the solved move stays
+    # within the clamps, so applying it reproduces the desired puck step.
     dx, dy = model.predict(0.5, 180.0, (270.0, 150.0), d_t, d_r)
-    assert abs(dx - 4.0) < 1e-2
-    assert abs(dy - (-6.0)) < 1e-2
+    assert abs(dx - 0.2) < 1e-2
+    assert abs(dy - (-0.3)) < 1e-2
     assert controllable is True
 
 
