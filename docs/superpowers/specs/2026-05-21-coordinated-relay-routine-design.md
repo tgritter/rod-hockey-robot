@@ -84,9 +84,11 @@ Per leg, in order:
    (`vision-1` service, `dynamic-crop` camera).
 2. **Position** — compute the receiving rod's translation:
    `t = clamp((puck_y − min_y_rod) / (max_y_rod − min_y_rod), 0, 1)`.
-   The `min_y_* / max_y_*` bands already exist in `engine/constants.py`, so no
-   new mapping table is required — just normalization. Send
-   `{"t": t, "r": receive_r}`.
+   Four rods (`center`, `right_wing`, `right_d`, `left_d`) already have
+   `min_y_* / max_y_*` bands in `engine/constants.py`; **left wing has none and
+   must be added** (`min_y_left_wing`, `max_y_left_wing`, plus `left_wing_x` for
+   the gate). With those, positioning is plain normalization — no mapping table.
+   Send `{"t": t, "r": receive_r}`.
 3. **Pass** — send the leg's `pass_step` (or the shot, on the last leg).
 4. **Gate** (every leg except the last) — poll vision every
    `RELAY_VISION_POLL_INTERVAL_S` until the puck's **x** is within
