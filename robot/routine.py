@@ -1,164 +1,107 @@
-"""Coordinated five-rod relay routine.
+"""Contact-based visual-servo relay routine.
 
-Relays the puck through every rod in order:
-  Left D -> Right D -> Center -> Left Wing -> Right Wing -> SHOT
-
-Each receiving rod follows the puck's detected position; vision confirms the
-puck has reached the next rod before that rod acts. See
-docs/superpowers/specs/2026-05-21-coordinated-relay-routine-design.md.
+Relays the puck through the rods and finishes with a shot. Each rod catches the
+puck by sweeping its translation until the puck moves (contact detected by
+vision-1), then swings to pass it toward the next rod. The puck is the only
+sensor — no player detection, no table geometry. See
+docs/superpowers/specs/2026-05-21-visual-servo-relay-design-v2.md.
 """
 
 import asyncio
 
-from engine.constants import (
-    PlayerID,
-    center_x, min_y_center, max_y_center,
-    right_wing_x, min_y_right_wing, max_y_right_wing,
-    right_d_x, min_y_right_d, max_y_right_d,
-    left_d_x, min_y_left_d, max_y_left_d,
-    left_wing_x, min_y_left_wing, max_y_left_wing,
-)
-
-from robot.const import (
-    RELAY_CAMERA,
-    RELAY_GATE_TOLERANCE_PX,
-    RELAY_GATE_TIMEOUT_S,
-    RELAY_VISION_POLL_INTERVAL_S,
-)
-from robot.playbook import RELAY
-
 from viam.components.generic import Generic
 
+from robot.const import RELAY_SWEEP_STEP_T, RELAY_CONTACT_MOVE_PX
 from robot.execution import _PLAYER_TO_COMPONENT
-from robot.vision import detect_puck
-
-# Per-rod translation band: t=0 -> min_y, t=1 -> max_y (game pixels).
-_ROD_Y_BAND = {
-    PlayerID.LEFT_D:     (min_y_left_d, max_y_left_d),
-    PlayerID.RIGHT_D:    (min_y_right_d, max_y_right_d),
-    PlayerID.CENTER:     (min_y_center, max_y_center),
-    PlayerID.LEFT_WING:  (min_y_left_wing, max_y_left_wing),
-    PlayerID.RIGHT_WING: (min_y_right_wing, max_y_right_wing),
-}
+from robot.playbook import RELAY
+from robot.vision import detect_puck_px
 
 
-def puck_y_to_t(player_id: PlayerID, puck_y: float) -> float:
-    """Map a puck game-y coordinate to a normalized [0, 1] translation for a rod."""
-    min_y, max_y = _ROD_Y_BAND[player_id]
-    t = (puck_y - min_y) / (max_y - min_y)
-    return max(0.0, min(1.0, t))
-
-
-# Per-rod x position (game pixels) — the gate axis for puck-arrival checks.
-_ROD_X = {
-    PlayerID.LEFT_D:     left_d_x,
-    PlayerID.RIGHT_D:    right_d_x,
-    PlayerID.CENTER:     center_x,
-    PlayerID.LEFT_WING:  left_wing_x,
-    PlayerID.RIGHT_WING: right_wing_x,
-}
-
-
-def puck_reached_rod(puck_x: float, rod_x: float, tol: float) -> bool:
-    """True if the puck's game-x is within `tol` pixels of a rod's x position."""
-    return abs(puck_x - rod_x) <= tol
+def _dist(a, b):
+    """Euclidean distance between two (x, y) points."""
+    return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
 
 
 def format_relay_plan() -> str:
     """Return a human-readable description of the relay plan (no hardware)."""
-    lines = ["Relay plan (Left D -> Right D -> Center -> Left Wing -> Right Wing):"]
+    lines = ["Relay plan (contact-based catch, then pass):"]
     last = len(RELAY) - 1
     for i, leg in enumerate(RELAY):
         player = leg["player"]
         action = "SHOT" if i == last else "pass"
         lines.append(
             f"  Leg {i + 1}: {player.name:11s} "
-            f"receive r={leg['receive_r']} (t follows puck_y), "
+            f"catch r={leg['receive_r']} (sweep t until contact), "
             f"{action} {leg['pass_step']}"
         )
-        if i != last:
-            nxt = RELAY[i + 1]["player"]
-            lines.append(
-                f"          gate: wait until puck_x within "
-                f"{RELAY_GATE_TOLERANCE_PX:.0f}px of {nxt.name} "
-                f"(x={_ROD_X[nxt]:.0f})"
-            )
     return "\n".join(lines)
 
 
-async def wait_for_puck_at_rod(machine, rod_x,
-                               tol=RELAY_GATE_TOLERANCE_PX,
-                               timeout=RELAY_GATE_TIMEOUT_S,
-                               interval=RELAY_VISION_POLL_INTERVAL_S) -> bool:
-    """Poll vision until the puck's x is within `tol` of `rod_x`.
+async def sweep_for_contact(machine, component, catch_r, step=RELAY_SWEEP_STEP_T):
+    """Sweep a rod's translation until the puck moves (contact).
 
-    Returns True once the puck arrives, or False if `timeout` seconds elapse
-    first. `machine` is an open RobotClient connection.
+    Parks the rod at t=0 with the catch rotation, records the puck's position,
+    then steps t up to 1.0. When the puck's detected position moves more than
+    RELAY_CONTACT_MOVE_PX from its pre-sweep position, the player has touched
+    it. Returns (contacted: bool, puck_pos: (x, y) | None).
     """
-    deadline = asyncio.get_running_loop().time() + timeout
-    while asyncio.get_running_loop().time() < deadline:
-        puck_x, _ = await detect_puck(machine, RELAY_CAMERA)
-        if puck_x is not None and puck_reached_rod(puck_x, rod_x, tol):
-            return True
-        await asyncio.sleep(interval)
-    return False
+    await component.do_command({"t": 0.0, "r": catch_r})
+    p0 = await detect_puck_px(machine)
+    if p0 is None:
+        return False, None
+    t = 0.0
+    while t < 1.0 - 1e-9:
+        t = min(1.0, t + step)
+        await component.do_command({"t": t})
+        p = await detect_puck_px(machine)
+        if p is not None and _dist(p, p0) > RELAY_CONTACT_MOVE_PX:
+            return True, p
+    return False, p0
 
 
-async def home_all(components: dict) -> None:
+async def home_all(components):
     """Return every rod in `components` to home pose (t=0, r=0) concurrently."""
     print("Homing all rods.")
     await asyncio.gather(*[c.do_command({"t": 0, "r": 0}) for c in components.values()])
 
 
-async def run_relay(machine) -> None:
-    """Run the full five-rod relay on an open RobotClient connection.
+async def run_relay(machine):
+    """Run the contact-based relay on an open RobotClient connection.
 
-    Detects the puck, then walks each leg: position the receiving rod to the
-    puck's y, fire the pass, and (except on the last leg) wait for vision to
-    confirm the puck reached the next rod. All rods are homed on exit, whether
-    the relay finishes or aborts.
+    Sweeps rods in leg order; the first to contact the puck starts the relay.
+    Each caught rod passes (or, on the last leg, shoots), and the next rod must
+    then catch. Once the relay has started, a rod that cannot catch means the
+    previous pass missed — abort. All rods are homed on exit, success or not.
     """
     components = {
-        pid: Generic.from_robot(robot=machine, name=_PLAYER_TO_COMPONENT[pid])
-        for pid in _ROD_X
+        leg["player"]: Generic.from_robot(
+            robot=machine, name=_PLAYER_TO_COMPONENT[leg["player"]]
+        )
+        for leg in RELAY
     }
     try:
-        puck_x, puck_y = await detect_puck(machine, RELAY_CAMERA)
-        if puck_x is None:
-            print("No puck detected — aborting relay.")
-            return
-
-        first = RELAY[0]["player"]
-        if not puck_reached_rod(puck_x, _ROD_X[first], RELAY_GATE_TOLERANCE_PX):
-            print(f"Puck not on {first.name}'s rod (puck_x={puck_x:.0f}, "
-                  f"expected ~{_ROD_X[first]:.0f}) — place the puck there to start.")
-            return
-
+        started = False
         last = len(RELAY) - 1
         for i, leg in enumerate(RELAY):
             player = leg["player"]
             comp = components[player]
-
-            # Legs after the first: re-detect the puck the gate just confirmed.
-            if i > 0:
-                puck_x, puck_y = await detect_puck(machine, RELAY_CAMERA)
-                if puck_x is None:
-                    print(f"Lost the puck before {player.name}'s leg — aborting.")
+            print(f"Leg {i + 1}: {player.name} — sweeping for the puck...")
+            contacted, pos = await sweep_for_contact(machine, comp, leg["receive_r"])
+            if not contacted:
+                if started:
+                    print(f"  {player.name} could not catch the puck — "
+                          f"previous pass missed, aborting relay.")
                     return
-
-            t = puck_y_to_t(player, puck_y)
-            print(f"Leg {i + 1}: {player.name} — receive t={t:.2f}, r={leg['receive_r']}")
-            await comp.do_command({"t": t, "r": leg["receive_r"]})
+                print(f"  puck not on {player.name}, trying the next rod.")
+                continue
+            started = True
+            is_shot = i == last
+            print(f"  {player.name} caught the puck at {pos} — "
+                  f"{'shooting' if is_shot else 'passing'}.")
             await comp.do_command(leg["pass_step"])
-
-            if i != last:
-                nxt = RELAY[i + 1]["player"]
-                print(f"  waiting for puck to reach {nxt.name}...")
-                arrived = await wait_for_puck_at_rod(machine, _ROD_X[nxt])
-                if not arrived:
-                    print(f"Puck never reached {nxt.name} — aborting relay.")
-                    return
-
-        print("Relay complete.")
+        if started:
+            print("Relay complete.")
+        else:
+            print("No rod ever found the puck — is it on the table?")
     finally:
         await home_all(components)

@@ -4,6 +4,15 @@
 **Status:** Proposed
 **Supersedes:** `2026-05-21-coordinated-relay-routine-design.md`
 
+> **Revision (2026-05-21, contact-based pivot).** Hardware testing showed
+> `Players--detector` is unreliable — it hangs/crashes (every call times out),
+> while `vision-1` puck detection is fast and dependable. The servo feedback is
+> therefore **contact-based**: a rod sweeps its `t`-range and the puck's own
+> motion (seen by `vision-1`) signals contact. `Players--detector`, rod
+> identification by player-box, and the player-tracking servo are dropped.
+> Sections below are superseded where they conflict with this revision; the
+> contact-based mechanism is specified in **§4a**.
+
 ## Why v2
 
 The v1 relay assumed a static `puck_y → t` coordinate map. Hardware testing
@@ -98,6 +107,22 @@ For a rod to catch the puck:
 
 The rod holds a fixed "catch" rotation `r` (stick down) during the servo.
 
+### 4a. The catch — contact-based (active mechanism)
+
+*Supersedes §2, §3, §4.* No player detection. Only the puck (`vision-1`) is
+observed. A rod catches the puck by sweeping until it touches it:
+
+1. Detect the puck position `P0` (camera pixels).
+2. Step the rod's `t` across its range in increments of `sweep_step_t`, holding
+   a fixed "catch" rotation `r`. After each step, detect the puck.
+3. When the puck's position moves more than `contact_move_px` from `P0`, the
+   player has contacted the puck — stop. The rod is now on the puck.
+4. If a full `t`-sweep produces no contact, the puck is not on this rod.
+
+Because the rod always knows its exact `t` from the module, the sweep is
+deterministic and repeatable. The sweep direction can start from whichever end
+is nearer the rod's current `t`.
+
 ### 5. The pass
 
 Once aligned, the rod swings `r` (a fast rotation: the leg's `pass_step`,
@@ -106,8 +131,8 @@ are per-leg placeholders, tuned on hardware.
 
 ### 6. The relay loop
 
-- Detect the puck. Determine the **start rod**: the rod whose player box is
-  nearest the puck along the non-`t` (longitudinal) axis.
+- Detect the puck. Determine the **start rod** by contact: sweep each rod in
+  leg order; the first rod whose sweep contacts the puck (§4a) is the start.
 - Run the fixed leg order from the start rod onward
   (Left D → Right D → Center → Left Wing → Right Wing → shot). Each leg:
   catch (servo) → pass. The last leg's pass is the shot.

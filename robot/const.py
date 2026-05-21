@@ -48,11 +48,7 @@ RELAY_VISION_RETRY_DELAY_S = 0.4
 # Per-call timeout — a detection call can hang if the gRPC channel drops.
 RELAY_VISION_CALL_TIMEOUT_S = 8.0
 
-# Catch servo: how close (camera pixels, along the rod's t-axis) the player must
-# be to the puck to count as aligned, and the max servo iterations per catch.
-RELAY_CATCH_TOL_PX   = 18.0   # TODO: calibrate
-RELAY_MAX_SERVO_ITERS = 12
-
-# Proportional servo gain fallback (units of t per pixel of error) used before
-# the per-rod axis probe measures a real gain.
-RELAY_SERVO_GAIN = 0.0015     # TODO: calibrate
+# Contact-based catch: sweep the rod's t in these increments; a puck that moves
+# more than RELAY_CONTACT_MOVE_PX (camera pixels) means the player touched it.
+RELAY_SWEEP_STEP_T    = 0.1
+RELAY_CONTACT_MOVE_PX = 15.0   # TODO: calibrate

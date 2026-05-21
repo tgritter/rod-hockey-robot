@@ -189,37 +189,37 @@ _LEFT_WING_PLAYBOOK = {
 }
 
 
-# ── Coordinated relay routine ──────────────────────────────────────────────────
+# ── Contact-based relay routine ─────────────────────────────────────────────────
 #
 # Ordered legs for the five-rod relay: Left D -> Right D -> Center ->
-# Left Wing -> Right Wing -> SHOT. Each leg's `t` (translation) is computed at
-# runtime from the puck position, so only `r` / `rpm` / `direction` are stored.
-# The last leg's `pass_step` is the shot.
+# Left Wing -> Right Wing -> SHOT. Each rod catches the puck by sweeping its
+# translation at `receive_r` until contact, so only the catch rotation and the
+# pass swing are stored. The last leg's `pass_step` is the shot.
 
 RELAY = [
     {
         "player": PlayerID.LEFT_D,
-        "receive_r": 90,                                              # TODO: calibrate
+        "receive_r": 0,                                               # catch rotation (r=0 validated on hardware)
         "pass_step": {"r": 300, "rpm": 220, "direction": "cw"},       # TODO: calibrate
     },
     {
         "player": PlayerID.RIGHT_D,
-        "receive_r": 90,                                              # TODO: calibrate
+        "receive_r": 0,                                               # catch rotation
         "pass_step": {"r": 60, "rpm": 220, "direction": "ccw"},       # TODO: calibrate
     },
     {
         "player": PlayerID.CENTER,
-        "receive_r": 90,                                              # TODO: calibrate
+        "receive_r": 0,                                               # catch rotation
         "pass_step": {"r": 60, "rpm": 300, "direction": "ccw"},       # TODO: calibrate
     },
     {
         "player": PlayerID.LEFT_WING,
-        "receive_r": 90,                                              # TODO: calibrate
+        "receive_r": 0,                                               # catch rotation
         "pass_step": {"r": 300, "rpm": 300, "direction": "cw"},       # TODO: calibrate
     },
     {
         "player": PlayerID.RIGHT_WING,
-        "receive_r": 90,                                              # TODO: calibrate
+        "receive_r": 0,                                               # catch rotation
         "pass_step": {"r": 0, "rpm": 400, "direction": "ccw"},        # TODO: calibrate -- SHOT
     },
 ]
