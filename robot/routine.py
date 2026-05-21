@@ -11,7 +11,11 @@ import asyncio
 
 from viam.components.generic import Generic
 
-from robot.const import RELAY_SWEEP_STEP_T, RELAY_CONTACT_MOVE_PX
+from robot.const import (
+    RELAY_SWEEP_STEP_T,
+    RELAY_CONTACT_MOVE_PX,
+    RELAY_CATCH_SPEED_MM_S,
+)
 from robot.execution import _PLAYER_TO_COMPONENT
 from robot.playbook import RELAY
 from robot.vision import detect_puck_px
@@ -48,13 +52,17 @@ async def sweep_for_contact(machine, component, catch_r, step=RELAY_SWEEP_STEP_T
     await component.do_command({"t": 0.0, "r": catch_r})
     p0 = await detect_puck_px(machine)
     if p0 is None:
+        print("    no puck detected at sweep start")
         return False, None
+    print(f"    sweep start: puck at ({p0[0]:.0f}, {p0[1]:.0f})")
     t = 0.0
     while t < 1.0 - 1e-9:
         t = min(1.0, t + step)
-        await component.do_command({"t": t})
+        await component.do_command({"t": t, "speed_mm_per_sec": RELAY_CATCH_SPEED_MM_S})
         p = await detect_puck_px(machine)
-        if p is not None and _dist(p, p0) > RELAY_CONTACT_MOVE_PX:
+        moved = _dist(p, p0) if p is not None else -1.0
+        print(f"    t={t:.1f}: puck={p} moved={moved:.0f}px")
+        if p is not None and moved > RELAY_CONTACT_MOVE_PX:
             return True, p
     return False, p0
 

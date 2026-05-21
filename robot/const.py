@@ -52,3 +52,7 @@ RELAY_VISION_CALL_TIMEOUT_S = 8.0
 # more than RELAY_CONTACT_MOVE_PX (camera pixels) means the player touched it.
 RELAY_SWEEP_STEP_T    = 0.1
 RELAY_CONTACT_MOVE_PX = 15.0   # TODO: calibrate
+
+# Catch sweep speed — kept low so the player corrals the puck instead of
+# batting it away (a fast sweep launches the puck on the low-friction table).
+RELAY_CATCH_SPEED_MM_S = 30.0  # TODO: calibrate
