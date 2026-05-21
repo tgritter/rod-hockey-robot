@@ -3,8 +3,6 @@
 See docs/superpowers/specs/2026-05-21-one-rod-puck-control-design.md.
 """
 
-import asyncio
-
 from viam.components.generic import Generic
 
 from robot.const import (
