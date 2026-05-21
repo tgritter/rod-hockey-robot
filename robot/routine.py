@@ -17,6 +17,14 @@ from engine.constants import (
     left_wing_x, min_y_left_wing, max_y_left_wing,
 )
 
+from robot.const import (
+    RELAY_CAMERA,
+    RELAY_GATE_TOLERANCE_PX,
+    RELAY_GATE_TIMEOUT_S,
+    RELAY_VISION_POLL_INTERVAL_S,
+)
+from robot.playbook import RELAY
+
 # Per-rod translation band: t=0 -> min_y, t=1 -> max_y (game pixels).
 _ROD_Y_BAND = {
     PlayerID.LEFT_D:     (min_y_left_d, max_y_left_d),
@@ -47,3 +55,25 @@ _ROD_X = {
 def puck_reached_rod(puck_x: float, rod_x: float, tol: float) -> bool:
     """True if the puck's game-x is within `tol` pixels of a rod's x position."""
     return abs(puck_x - rod_x) <= tol
+
+
+def format_relay_plan() -> str:
+    """Return a human-readable description of the relay plan (no hardware)."""
+    lines = ["Relay plan (Left D -> Right D -> Center -> Left Wing -> Right Wing):"]
+    last = len(RELAY) - 1
+    for i, leg in enumerate(RELAY):
+        player = leg["player"]
+        action = "SHOT" if i == last else "pass"
+        lines.append(
+            f"  Leg {i + 1}: {player.name:11s} "
+            f"receive r={leg['receive_r']} (t follows puck_y), "
+            f"{action} {leg['pass_step']}"
+        )
+        if i != last:
+            nxt = RELAY[i + 1]["player"]
+            lines.append(
+                f"          gate: wait until puck_x within "
+                f"{RELAY_GATE_TOLERANCE_PX:.0f}px of {nxt.name} "
+                f"(x={_ROD_X[nxt]:.0f})"
+            )
+    return "\n".join(lines)

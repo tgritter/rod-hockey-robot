@@ -45,3 +45,25 @@ def test_puck_reached_rod_outside_tolerance():
 
 def test_puck_reached_rod_exactly_at_tolerance():
     assert puck_reached_rod(puck_x=230.0, rod_x=200.0, tol=30.0) is True
+
+
+from robot.routine import format_relay_plan
+
+
+def test_format_relay_plan_lists_all_five_legs():
+    text = format_relay_plan()
+    assert "Leg 1:" in text
+    assert "Leg 5:" in text
+    assert "LEFT_D" in text
+    assert "RIGHT_WING" in text
+
+
+def test_format_relay_plan_marks_the_shot():
+    text = format_relay_plan()
+    assert "SHOT" in text
+
+
+def test_format_relay_plan_describes_gates():
+    text = format_relay_plan()
+    # Four gates (one between each pair of legs), none after the last leg.
+    assert text.count("gate:") == 4
