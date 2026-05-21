@@ -32,3 +32,18 @@ def puck_y_to_t(player_id: PlayerID, puck_y: float) -> float:
     min_y, max_y = _ROD_Y_BAND[player_id]
     t = (puck_y - min_y) / (max_y - min_y)
     return max(0.0, min(1.0, t))
+
+
+# Per-rod x position (game pixels) — the gate axis for puck-arrival checks.
+_ROD_X = {
+    PlayerID.LEFT_D:     left_d_x,
+    PlayerID.RIGHT_D:    right_d_x,
+    PlayerID.CENTER:     center_x,
+    PlayerID.LEFT_WING:  left_wing_x,
+    PlayerID.RIGHT_WING: right_wing_x,
+}
+
+
+def puck_reached_rod(puck_x: float, rod_x: float, tol: float) -> bool:
+    """True if the puck's game-x is within `tol` pixels of a rod's x position."""
+    return abs(puck_x - rod_x) <= tol

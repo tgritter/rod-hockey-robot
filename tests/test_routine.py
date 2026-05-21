@@ -30,3 +30,18 @@ def test_puck_y_to_t_uses_per_rod_band():
     # Left D has a different band than Center
     assert puck_y_to_t(PlayerID.LEFT_D, min_y_left_d) == 0.0
     assert puck_y_to_t(PlayerID.LEFT_D, max_y_left_d) == 1.0
+
+
+from robot.routine import puck_reached_rod
+
+
+def test_puck_reached_rod_inside_tolerance():
+    assert puck_reached_rod(puck_x=205.0, rod_x=200.0, tol=30.0) is True
+
+
+def test_puck_reached_rod_outside_tolerance():
+    assert puck_reached_rod(puck_x=260.0, rod_x=200.0, tol=30.0) is False
+
+
+def test_puck_reached_rod_exactly_at_tolerance():
+    assert puck_reached_rod(puck_x=230.0, rod_x=200.0, tol=30.0) is True
