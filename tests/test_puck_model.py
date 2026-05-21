@@ -100,3 +100,27 @@ def test_solve_clamps_the_move():
 
 def test_solve_with_empty_model_is_zero():
     assert PuckModel([]).solve((0.5, 180.0, 270.0, 150.0), (10.0, 10.0)) == (0.0, 0.0, 0.0)
+
+
+import math
+
+from robot.puck_model import puck_step_toward, should_exploit
+
+
+def test_puck_step_toward_within_range_returns_full_vector():
+    assert puck_step_toward((100.0, 100.0), (110.0, 100.0), max_step=25.0) == (10.0, 0.0)
+
+
+def test_puck_step_toward_clamps_to_max_step():
+    step = puck_step_toward((0.0, 0.0), (300.0, 400.0), max_step=25.0)
+    assert math.isclose(math.hypot(*step), 25.0, rel_tol=1e-9)
+
+
+def test_puck_step_toward_at_target_is_zero():
+    assert puck_step_toward((50.0, 50.0), (50.0, 50.0), max_step=25.0) == (0.0, 0.0)
+
+
+def test_should_exploit_compares_confidence_to_threshold():
+    assert should_exploit(0.8, threshold=0.5) is True
+    assert should_exploit(0.5, threshold=0.5) is True
+    assert should_exploit(0.3, threshold=0.5) is False

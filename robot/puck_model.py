@@ -132,3 +132,18 @@ class PuckModel:
         d_t = float(np.clip(move[0], -AUTO_MAX_STEP_T, AUTO_MAX_STEP_T))
         d_r = float(np.clip(move[1], -AUTO_MAX_STEP_R, AUTO_MAX_STEP_R))
         return d_t, d_r, self.confidence(state)
+
+
+def puck_step_toward(puck, target, max_step):
+    """Return a displacement vector from puck toward target, capped at max_step."""
+    dx = target[0] - puck[0]
+    dy = target[1] - puck[1]
+    dist = (dx * dx + dy * dy) ** 0.5
+    if dist <= max_step or dist == 0.0:
+        return (dx, dy)
+    return (dx / dist * max_step, dy / dist * max_step)
+
+
+def should_exploit(confidence, threshold):
+    """True when the model is confident enough to exploit rather than explore."""
+    return confidence >= threshold
