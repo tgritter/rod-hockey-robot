@@ -102,6 +102,11 @@ min_y_left_d = 1.5 * SCALE   # 37.5 px
 max_y_left_d = 18  * SCALE   # 450 px
 left_d_x     = 13  * SCALE   # 325 px
 
+# Left Wing  (no calibrated band existed — placeholders, TODO: calibrate)
+min_y_left_wing = 21.5 * SCALE   # 537.5 px — TODO: calibrate
+max_y_left_wing = 31   * SCALE   # 775 px   — TODO: calibrate
+left_wing_x     = 11   * SCALE   # 275 px   — TODO: calibrate
+
 
 # ============================================================
 #  Scoring zones

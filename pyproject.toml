@@ -13,3 +13,12 @@ dependencies = [
     "stable-baselines3>=2.8.0",
     "viam-sdk>=0.71.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
