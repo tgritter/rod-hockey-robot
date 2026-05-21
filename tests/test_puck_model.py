@@ -58,3 +58,20 @@ def test_predict_recovers_a_global_linear_jacobian():
 
 def test_predict_with_empty_model_is_zero():
     assert PuckModel([]).predict((0.5, 180.0, 270.0, 150.0), 0.05, 10.0) == (0.0, 0.0)
+
+
+def test_confidence_is_one_when_samples_sit_at_the_query():
+    state = (0.5, 180.0, 270.0, 150.0)
+    samples = [Sample(*state, 0.05, 10.0, 271.0, 151.0) for _ in range(10)]
+    assert PuckModel(samples).confidence(state) == 1.0
+
+
+def test_confidence_is_near_zero_far_from_the_data():
+    state = (0.5, 180.0, 270.0, 150.0)
+    samples = [Sample(*state, 0.05, 10.0, 271.0, 151.0) for _ in range(10)]
+    far = (0.95, 350.0, 520.0, 290.0)
+    assert PuckModel(samples).confidence(far) < 0.1
+
+
+def test_confidence_with_empty_model_is_zero():
+    assert PuckModel([]).confidence((0.5, 180.0, 270.0, 150.0)) == 0.0

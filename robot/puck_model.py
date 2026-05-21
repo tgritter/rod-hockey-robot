@@ -106,3 +106,15 @@ class PuckModel:
         j = self._local_jacobian(state)
         dp = j @ np.array([d_t, d_r], float)
         return float(dp[0]), float(dp[1])
+
+    def confidence(self, state):
+        """Confidence in [0, 1] that the model knows this state.
+
+        1.0 when samples sit exactly at the query, falling toward 0 as the
+        nearest samples get farther away. 0.0 with no data.
+        """
+        if not self.samples:
+            return 0.0
+        _, _, nd = self._neighbours(state)
+        mean_d = float(nd.mean())
+        return AUTO_CONFIDENCE_SCALE / (AUTO_CONFIDENCE_SCALE + mean_d)
