@@ -48,10 +48,14 @@ motors many times in quick succession.
 Extract the detection body into:
 
 ```python
-async def detect_puck(machine, camera_name=RELAY_CAMERA):
+async def detect_puck(machine, camera_name="C270"):
     """Return the puck's game-space (x, y) using an existing connection,
     or (None, None) if no puck is detected."""
 ```
+
+The `camera_name` default stays `"C270"` so the legacy detection path is
+unchanged; the relay passes `RELAY_CAMERA` (`"dynamic-crop"`) explicitly at
+each call site.
 
 `get_puck_game_coordinates()` keeps its current behavior by opening a
 connection and delegating to `detect_puck()`. The relay calls `detect_puck()`
