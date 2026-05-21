@@ -36,17 +36,23 @@ RW_SLIDE_MAX_TICKS     = 500   # TODO: calibrate full travel
 
 
 # ============================================================
-#  Relay routine
+#  Visual-servo relay
 # ============================================================
 
-# Camera component used for puck detection during the relay.
+# Camera component used for all relay vision (puck + players).
 RELAY_CAMERA = "dynamic-crop"
 
-# How close (game pixels) the puck's x must be to a rod to count as "arrived".
-RELAY_GATE_TOLERANCE_PX = 30.0   # TODO: calibrate
+# Vision retry — the dynamic-crop camera intermittently fails; retry through it.
+RELAY_VISION_RETRIES       = 8
+RELAY_VISION_RETRY_DELAY_S = 0.4
+# Per-call timeout — a detection call can hang if the gRPC channel drops.
+RELAY_VISION_CALL_TIMEOUT_S = 8.0
 
-# Max time to wait for the puck to reach the next rod before aborting (seconds).
-RELAY_GATE_TIMEOUT_S = 8.0
+# Catch servo: how close (camera pixels, along the rod's t-axis) the player must
+# be to the puck to count as aligned, and the max servo iterations per catch.
+RELAY_CATCH_TOL_PX   = 18.0   # TODO: calibrate
+RELAY_MAX_SERVO_ITERS = 12
 
-# Delay between vision polls while waiting at a gate (seconds).
-RELAY_VISION_POLL_INTERVAL_S = 0.3
+# Proportional servo gain fallback (units of t per pixel of error) used before
+# the per-rod axis probe measures a real gain.
+RELAY_SERVO_GAIN = 0.0015     # TODO: calibrate

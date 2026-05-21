@@ -14,12 +14,18 @@ from viam.services.vision import VisionClient
 from .const import (
     ROBOT_ADDRESS, ROBOT_API_KEY, ROBOT_API_KEY_ID,
     CAMERA_X_MIN, CAMERA_X_MAX, CAMERA_Y_MIN, CAMERA_Y_MAX,
+    RELAY_CAMERA, RELAY_VISION_RETRIES, RELAY_VISION_RETRY_DELAY_S,
+    RELAY_VISION_CALL_TIMEOUT_S,
 )
 from engine.constants import WIDTH, HEIGHT
 
 # Class name used by the vision service to label field corner markers
 _CORNER_CLASS = "lime-green"
 _PUCK_CLASS   = "orange"
+
+# Players--detector service and the class it gives our own players
+_PLAYER_DETECTOR    = "Players--detector"
+_ROBOT_PLAYER_CLASS = "Robot_Player"
 
 
 def get_center(bbox):
@@ -113,6 +119,53 @@ async def get_puck_game_coordinates():
         return await detect_puck(machine)
     finally:
         await machine.close()
+
+
+# ── Visual-servo relay: pixel-space detection ──────────────────────────────────
+
+async def _detections(machine, service_name, retries, delay):
+    """Robustly fetch detections from a vision service on the dynamic-crop camera.
+
+    Each call is bounded by RELAY_VISION_CALL_TIMEOUT_S — a detection call can
+    hang outright if the gRPC channel drops. On timeout or error, retry. Returns
+    the detection list, or [] if every attempt failed.
+    """
+    svc = VisionClient.from_robot(machine, service_name)
+    for _ in range(retries):
+        try:
+            return await asyncio.wait_for(
+                svc.get_detections_from_camera(RELAY_CAMERA),
+                timeout=RELAY_VISION_CALL_TIMEOUT_S,
+            )
+        except Exception:
+            await asyncio.sleep(delay)
+    return []
+
+
+async def detect_puck_px(machine, retries=RELAY_VISION_RETRIES, delay=RELAY_VISION_RETRY_DELAY_S):
+    """Return the puck's (x, y) center in camera pixels, or None if not found."""
+    for _ in range(retries):
+        dets = await _detections(machine, "vision-1", retries=2, delay=delay)
+        pucks = [d for d in dets if d.class_name == _PUCK_CLASS]
+        if pucks:
+            pucks.sort(key=lambda d: d.y_min)
+            return get_center(pucks[len(pucks) // 2])
+        await asyncio.sleep(delay)
+    return None
+
+
+async def detect_robot_players_px(machine, retries=RELAY_VISION_RETRIES, delay=RELAY_VISION_RETRY_DELAY_S):
+    """Return a list of (x, y) centers of Robot_Player boxes in camera pixels.
+
+    Returns [] if none are found.
+    """
+    for _ in range(retries):
+        dets = await _detections(machine, _PLAYER_DETECTOR, retries=2, delay=delay)
+        players = [get_center(d) for d in dets if d.class_name == _ROBOT_PLAYER_CLASS]
+        if players:
+            return players
+        await asyncio.sleep(delay)
+    return []
 
 
 def _field_bounds_from_corners(detections):
