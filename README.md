@@ -111,6 +111,22 @@ Sends the same `(t, r)` to every hockey-player component concurrently — useful
 python move.py 0.5 90
 ```
 
+### Autonomous puck control
+
+Runs a self-learning loop on one player: it detects the puck, learns how its
+moves affect it from real data, and moves the puck to self-chosen targets —
+no human, no hardcoded geometry.
+
+```bash
+python auto.py                       # run until interrupted
+python auto.py --cycles 30           # run a bounded session
+python auto.py --player center-hockey-player
+```
+
+The loop writes `data/<player>.jsonl` and re-learns from it each cycle, so
+learning accumulates across runs. Tuning lives in `robot/const.py` (`AUTO_*`).
+See `docs/superpowers/specs/2026-05-21-autonomous-puck-control-design.md`.
+
 ### One-rod puck control (learns from reality)
 
 Trains a single rod to control the puck by learning the rig's real behaviour
