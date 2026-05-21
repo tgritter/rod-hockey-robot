@@ -45,3 +45,42 @@ def test_puck_step_toward_clamps_to_max_step():
 
 def test_puck_step_toward_at_target_is_zero():
     assert puck_step_toward((50.0, 50.0), (50.0, 50.0), max_step=25.0) == (0.0, 0.0)
+
+
+import numpy as np
+
+from robot.rod_model import RodModel
+
+
+def _linear_samples(jacobian, n=40, seed=0):
+    """Build n Samples whose puck response is exactly jacobian @ (dt, dr)."""
+    rng = np.random.default_rng(seed)
+    j = np.array(jacobian, float)
+    out = []
+    for _ in range(n):
+        t = rng.uniform(0, 1)
+        r = rng.uniform(0, 360)
+        px = rng.uniform(0, 540)
+        py = rng.uniform(0, 300)
+        dt = rng.uniform(-0.1, 0.1)
+        dr = rng.uniform(-30, 30)
+        dp = j @ np.array([dt, dr])
+        out.append(Sample(t, r, px, py, dt, dr, px + dp[0], py + dp[1]))
+    return out
+
+
+def test_predict_recovers_a_global_linear_jacobian():
+    j = [[2.0, 0.1], [0.3, -1.5]]
+    model = RodModel(_linear_samples(j))
+    dx, dy = model.predict(0.5, 180.0, (270.0, 150.0), d_t=0.05, d_r=10.0)
+    expected = np.array(j) @ np.array([0.05, 10.0])
+    assert abs(dx - expected[0]) < 1e-3
+    assert abs(dy - expected[1]) < 1e-3
+
+
+def test_rodmodel_rejects_empty_dataset():
+    try:
+        RodModel([])
+        assert False, "expected ValueError"
+    except ValueError:
+        pass

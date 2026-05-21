@@ -69,3 +69,52 @@ def puck_step_toward(puck, target, max_step):
     if dist <= max_step or dist == 0.0:
         return (dx, dy)
     return (dx / dist * max_step, dy / dist * max_step)
+
+
+class RodModel:
+    """Locally-weighted linear model of rod (Δt, Δr) -> puck displacement.
+
+    Fit from a dataset of real Samples. For any query state, a 2x2 Jacobian J
+    with Δpuck ≈ J·(Δt, Δr) is least-squares fit from the nearest samples.
+    """
+
+    def __init__(self, samples):
+        if not samples:
+            raise ValueError("RodModel needs at least one sample")
+        self.samples = list(samples)
+        # Query state per sample: (t, r, puck_x, puck_y).
+        self._states = np.array(
+            [[s.t, s.r, s.puck_x, s.puck_y] for s in self.samples], float)
+        # Per-dimension scale so neighbour distances are comparable.
+        self._scale = np.maximum(self._states.std(axis=0), 1e-6)
+        # Commanded moves and observed puck responses.
+        self._moves = np.array([[s.dt, s.dr] for s in self.samples], float)
+        self._responses = np.array(
+            [[s.puck_x2 - s.puck_x, s.puck_y2 - s.puck_y] for s in self.samples],
+            float)
+
+    def _neighbours(self, t, r, puck):
+        """Return (indices, weights) of the nearest samples to a query state."""
+        q = np.array([t, r, puck[0], puck[1]], float)
+        d = np.linalg.norm((self._states - q) / self._scale, axis=1)
+        k = min(ROD_MODEL_K, len(self.samples))
+        idx = np.argsort(d)[:k]
+        bandwidth = max(d[idx].mean(), 1e-6)
+        weights = np.exp(-(d[idx] / bandwidth) ** 2)
+        return idx, weights
+
+    def _local_jacobian(self, t, r, puck):
+        """Weighted least-squares 2x2 Jacobian near a query state, with the
+        neighbour indices used to fit it."""
+        idx, weights = self._neighbours(t, r, puck)
+        a = self._moves[idx]
+        y = self._responses[idx]
+        sw = np.sqrt(weights)[:, None]
+        jt, *_ = np.linalg.lstsq(a * sw, y * sw, rcond=None)
+        return jt.T, idx
+
+    def predict(self, t, r, puck, d_t, d_r):
+        """Predict the puck displacement (dx, dy) for a move (d_t, d_r)."""
+        j, _ = self._local_jacobian(t, r, puck)
+        dp = j @ np.array([d_t, d_r], float)
+        return float(dp[0]), float(dp[1])
