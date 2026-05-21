@@ -33,3 +33,20 @@ TICKS_PER_ROTATION = 200
 # Lateral slide tick limits (0 = home position)
 CENTER_SLIDE_MAX_TICKS = 500   # TODO: calibrate full travel
 RW_SLIDE_MAX_TICKS     = 500   # TODO: calibrate full travel
+
+
+# ============================================================
+#  Relay routine
+# ============================================================
+
+# Camera component used for puck detection during the relay.
+RELAY_CAMERA = "dynamic-crop"
+
+# How close (game pixels) the puck's x must be to a rod to count as "arrived".
+RELAY_GATE_TOLERANCE_PX = 30.0   # TODO: calibrate
+
+# Max time to wait for the puck to reach the next rod before aborting (seconds).
+RELAY_GATE_TIMEOUT_S = 8.0
+
+# Delay between vision polls while waiting at a gate (seconds).
+RELAY_VISION_POLL_INTERVAL_S = 0.3
