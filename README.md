@@ -127,35 +127,6 @@ The loop writes `data/<player>.jsonl` and re-learns from it each cycle, so
 learning accumulates across runs. Tuning lives in `robot/const.py` (`AUTO_*`).
 See `docs/superpowers/specs/2026-05-21-autonomous-puck-control-design.md`.
 
-### One-rod puck control (learns from reality)
-
-Trains a single rod to control the puck by learning the rig's real behaviour
-from `vision-1` + `hockey-player` data — no simulation, no hardcoded geometry.
-
-```bash
-python rod.py collect                       # drive the rod, record real samples
-python rod.py control --target 300 220      # carry the puck to a pixel target
-```
-
-`collect` writes `data/rod_<rod>.jsonl`. `control` fits a locally-weighted
-model from that dataset and runs a closed-loop controller. Tuning lives in
-`robot/const.py` (`ROD_*`). See
-`docs/superpowers/specs/2026-05-21-one-rod-puck-control-design.md`.
-
-### Run the coordinated relay routine
-
-Relays the puck through all five rods and finishes with a shot. Each rod
-follows the puck's detected position; vision confirms the puck arrived before
-the next rod acts.
-
-```bash
-python routine.py            # run the relay on the robot
-python routine.py --dry-run  # print the relay plan, no hardware
-```
-
-Place the puck on the Left D rod before starting. Tuning lives in
-`robot/const.py` (`RELAY_*`) and `robot/playbook.py` (`RELAY`).
-
 ## Built With
 
 - [Viam](https://www.viam.com/) - Robotics platform for hardware control
