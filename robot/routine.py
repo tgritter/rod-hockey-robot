@@ -108,3 +108,57 @@ async def home_all(components: dict) -> None:
     """Return every rod in `components` to home pose (t=0, r=0) concurrently."""
     print("Homing all rods.")
     await asyncio.gather(*[c.do_command({"t": 0, "r": 0}) for c in components.values()])
+
+
+async def run_relay(machine) -> None:
+    """Run the full five-rod relay on an open RobotClient connection.
+
+    Detects the puck, then walks each leg: position the receiving rod to the
+    puck's y, fire the pass, and (except on the last leg) wait for vision to
+    confirm the puck reached the next rod. All rods are homed on exit, whether
+    the relay finishes or aborts.
+    """
+    components = {
+        pid: Generic.from_robot(robot=machine, name=_PLAYER_TO_COMPONENT[pid])
+        for pid in _ROD_X
+    }
+    try:
+        puck_x, puck_y = await detect_puck(machine, RELAY_CAMERA)
+        if puck_x is None:
+            print("No puck detected — aborting relay.")
+            return
+
+        first = RELAY[0]["player"]
+        if not puck_reached_rod(puck_x, _ROD_X[first], RELAY_GATE_TOLERANCE_PX):
+            print(f"Puck not on {first.name}'s rod (puck_x={puck_x:.0f}, "
+                  f"expected ~{_ROD_X[first]:.0f}) — place the puck there to start.")
+            return
+
+        last = len(RELAY) - 1
+        for i, leg in enumerate(RELAY):
+            player = leg["player"]
+            comp = components[player]
+
+            # Legs after the first: re-detect the puck the gate just confirmed.
+            if i > 0:
+                puck_x, puck_y = await detect_puck(machine, RELAY_CAMERA)
+                if puck_x is None:
+                    print(f"Lost the puck before {player.name}'s leg — aborting.")
+                    return
+
+            t = puck_y_to_t(player, puck_y)
+            print(f"Leg {i + 1}: {player.name} — receive t={t:.2f}, r={leg['receive_r']}")
+            await comp.do_command({"t": t, "r": leg["receive_r"]})
+            await comp.do_command(leg["pass_step"])
+
+            if i != last:
+                nxt = RELAY[i + 1]["player"]
+                print(f"  waiting for puck to reach {nxt.name}...")
+                arrived = await wait_for_puck_at_rod(machine, _ROD_X[nxt])
+                if not arrived:
+                    print(f"Puck never reached {nxt.name} — aborting relay.")
+                    return
+
+        print("Relay complete.")
+    finally:
+        await home_all(components)
