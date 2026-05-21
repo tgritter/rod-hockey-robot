@@ -59,3 +59,13 @@ def append_sample(path: str, t, r, puck, dt, dr, puck2) -> None:
            "dt": dt, "dr": dr, "puck_x2": puck2[0], "puck_y2": puck2[1]}
     with open(path, "a") as f:
         f.write(json.dumps(rec) + "\n")
+
+
+def puck_step_toward(puck, target, max_step):
+    """Return a displacement vector from puck toward target, capped at max_step."""
+    dx = target[0] - puck[0]
+    dy = target[1] - puck[1]
+    dist = (dx * dx + dy * dy) ** 0.5
+    if dist <= max_step or dist == 0.0:
+        return (dx, dy)
+    return (dx / dist * max_step, dy / dist * max_step)

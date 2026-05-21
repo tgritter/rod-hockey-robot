@@ -27,3 +27,21 @@ def test_load_dataset_skips_blank_lines(tmp_path):
     with open(path, "a") as f:
         f.write("\n")
     assert len(load_dataset(path)) == 1
+
+
+import math
+
+from robot.rod_model import puck_step_toward
+
+
+def test_puck_step_toward_within_range_returns_full_vector():
+    assert puck_step_toward((100.0, 100.0), (110.0, 100.0), max_step=25.0) == (10.0, 0.0)
+
+
+def test_puck_step_toward_clamps_to_max_step():
+    step = puck_step_toward((0.0, 0.0), (300.0, 400.0), max_step=25.0)
+    assert math.isclose(math.hypot(*step), 25.0, rel_tol=1e-9)
+
+
+def test_puck_step_toward_at_target_is_zero():
+    assert puck_step_toward((50.0, 50.0), (50.0, 50.0), max_step=25.0) == (0.0, 0.0)
