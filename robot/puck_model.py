@@ -57,3 +57,52 @@ def append_sample(path, t, r, puck, dt, dr, puck2) -> None:
            "dt": dt, "dr": dr, "puck_x2": puck2[0], "puck_y2": puck2[1]}
     with open(path, "a") as f:
         f.write(json.dumps(rec) + "\n")
+
+
+class PuckModel:
+    """Locally-weighted model of (player state, move) -> puck displacement.
+
+    State is (t, r, puck_x, puck_y). For a query state a 2x2 Jacobian J with
+    Δpuck ≈ J·(Δt, Δr) is least-squares fit from the nearest samples. An empty
+    dataset is valid — predict/solve return zeros and confidence returns 0, so
+    the loop simply explores until it has data.
+    """
+
+    def __init__(self, samples):
+        self.samples = list(samples)
+        if self.samples:
+            self._states = np.array(
+                [[s.t, s.r, s.puck_x, s.puck_y] for s in self.samples], float)
+            self._scale = np.maximum(self._states.std(axis=0), 1e-6)
+            self._moves = np.array([[s.dt, s.dr] for s in self.samples], float)
+            self._responses = np.array(
+                [[s.puck_x2 - s.puck_x, s.puck_y2 - s.puck_y]
+                 for s in self.samples], float)
+
+    def _neighbours(self, state):
+        """(indices, weights, distances) of the nearest samples to a state."""
+        q = np.array(state, float)
+        d = np.linalg.norm((self._states - q) / self._scale, axis=1)
+        k = min(AUTO_MODEL_K, len(self.samples))
+        idx = np.argsort(d)[:k]
+        nd = d[idx]
+        bw = max(nd.mean(), 1e-6)
+        w = np.exp(-(nd / bw) ** 2)
+        return idx, w, nd
+
+    def _local_jacobian(self, state):
+        """Weighted least-squares 2x2 Jacobian near a query state."""
+        idx, w, _ = self._neighbours(state)
+        a = self._moves[idx]
+        y = self._responses[idx]
+        sw = np.sqrt(w)[:, None]
+        jt, *_ = np.linalg.lstsq(a * sw, y * sw, rcond=None)
+        return jt.T
+
+    def predict(self, state, d_t, d_r):
+        """Predicted puck displacement (dx, dy) for a move; (0, 0) with no data."""
+        if not self.samples:
+            return 0.0, 0.0
+        j = self._local_jacobian(state)
+        dp = j @ np.array([d_t, d_r], float)
+        return float(dp[0]), float(dp[1])
