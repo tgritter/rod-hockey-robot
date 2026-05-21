@@ -67,44 +67,50 @@ async def _connect():
     return await RobotClient.at_address(ROBOT_ADDRESS, opts)
 
 
+async def detect_puck(machine, camera_name="C270"):
+    """Detect the puck using an existing robot connection.
+
+    Fetches puck detections from vision-1 and corner detections from vision-2
+    to derive dynamic camera bounds, falling back to hardcoded bounds if corners
+    are not found. Returns (game_x, game_y) in game pixels, or (None, None) if
+    no puck is detected.
+    """
+    vision1 = VisionClient.from_robot(machine, "vision-1")
+    vision2 = VisionClient.from_robot(machine, "vision-2")
+
+    puck_detections, corner_detections = await asyncio.gather(
+        vision1.get_detections_from_camera(camera_name),
+        vision2.get_detections_from_camera(camera_name),
+    )
+
+    pink = [d for d in puck_detections if d.class_name == _PUCK_CLASS]
+    if not pink:
+        return None, None
+
+    # Pick the median detection to reduce noise
+    pink.sort(key=lambda d: d.y_min)
+    puck = pink[len(pink) // 2]
+    camera_x, camera_y = get_center(puck)
+    print(f"Camera puck: x={camera_x:.1f}, y={camera_y:.1f}")
+
+    bounds = _field_bounds_from_corners(corner_detections)
+    if bounds:
+        cam_x_min, cam_x_max, cam_y_min, cam_y_max = bounds
+    else:
+        cam_x_min, cam_x_max = CAMERA_X_MIN, CAMERA_X_MAX
+        cam_y_min, cam_y_max = CAMERA_Y_MIN, CAMERA_Y_MAX
+
+    return scale_puck_coords(camera_x, camera_y, cam_x_min, cam_x_max, cam_y_min, cam_y_max)
+
+
 async def get_puck_game_coordinates():
     """Connect to the robot, detect the puck, and return its game-space (x, y).
 
-    Fetches puck detections from vision-1 and corner detections from vision-2
-    to derive dynamic camera bounds. Falls back to hardcoded bounds if corners
-    are not found. Returns (game_x, game_y) in pixels, or (None, None) if no
-    puck is detected.
+    Returns (game_x, game_y) in pixels, or (None, None) if no puck is detected.
     """
     machine = await _connect()
     try:
-        vision1 = VisionClient.from_robot(machine, "vision-1")
-        vision2 = VisionClient.from_robot(machine, "vision-2")
-
-        puck_detections, corner_detections = await asyncio.gather(
-            vision1.get_detections_from_camera("C270"),
-            vision2.get_detections_from_camera("C270"),
-        )
-
-        pink = [d for d in puck_detections if d.class_name == _PUCK_CLASS]
-        if not pink:
-            return None, None
-
-        # Pick the median detection to reduce noise
-        pink.sort(key=lambda d: d.y_min)
-        puck = pink[len(pink) // 2]
-        camera_x, camera_y = get_center(puck)
-        print(f"Camera puck: x={camera_x:.1f}, y={camera_y:.1f}")
-
-        bounds = _field_bounds_from_corners(corner_detections)
-        if bounds:
-            cam_x_min, cam_x_max, cam_y_min, cam_y_max = bounds
-        else:
-            cam_x_min, cam_x_max = CAMERA_X_MIN, CAMERA_X_MAX
-            cam_y_min, cam_y_max = CAMERA_Y_MIN, CAMERA_Y_MAX
-
-        game_x, game_y = scale_puck_coords(camera_x, camera_y, cam_x_min, cam_x_max, cam_y_min, cam_y_max)
-        return game_x, game_y
-
+        return await detect_puck(machine)
     finally:
         await machine.close()
 
