@@ -111,6 +111,20 @@ Sends the same `(t, r)` to every hockey-player component concurrently — useful
 python move.py 0.5 90
 ```
 
+### Run the coordinated relay routine
+
+Relays the puck through all five rods and finishes with a shot. Each rod
+follows the puck's detected position; vision confirms the puck arrived before
+the next rod acts.
+
+```bash
+python routine.py            # run the relay on the robot
+python routine.py --dry-run  # print the relay plan, no hardware
+```
+
+Place the puck on the Left D rod before starting. Tuning lives in
+`robot/const.py` (`RELAY_*`) and `robot/playbook.py` (`RELAY`).
+
 ## Built With
 
 - [Viam](https://www.viam.com/) - Robotics platform for hardware control
