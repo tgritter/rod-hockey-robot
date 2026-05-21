@@ -77,27 +77,31 @@ through many small moves, recording one sample per move:
 (`puck_x/y`) and after (`puck_x2/y2`) from `vision-1`, and the move
 `(dt, dr)`.
 
-Collection procedure — **contact-following**. A blind grid of probe moves
-fails: at most `(t, r)` states the player is nowhere near the puck, so the
-probe touches nothing and the dataset is almost entirely no-contact samples,
-useless for learning control. Instead the collector follows the puck:
+Collection procedure — **carry-based**. Hardware testing established a hard
+fact: contact is *one-directional*. The player only moves the puck when it
+translates *into* it (a positive-`dt` push); negative-`dt` moves and pure
+rotations leave the puck untouched, and any random move breaks contact. Blind
+grids and random probing therefore yield almost no contact data. But a
+*continuous push* reliably carries the puck the full length of the rod.
 
-- **Sweep to contact.** Step the rod's translation in small increments until
-  the puck moves more than `ROD_CONTACT_MOVE_PX` — the player is now on the
-  puck. Each sweep step is recorded as a sample. If a full sweep finds nothing,
-  the puck is out of reach: pause and ask the operator to reposition it.
-- **Burst-probe.** From the contact state, take `ROD_COLLECT_BURST` small
-  random probe moves spanning `±Δt` and `±Δr`, recording each. Because the
-  player starts the burst on the puck, these are contact samples.
-- **Follow.** The probes nudge the puck along; the player rides with it. When a
-  probe loses sight of the puck, the next sweep re-acquires it.
-- Repeat until `ROD_COLLECT_SAMPLES` samples are recorded.
-- Every move is gentle (low `speed_mm_per_sec`) so the puck is nudged, not
-  launched. Every move (sweep step and probe) is appended to
-  `data/rod_<name>.jsonl` as it is taken, so a crash loses nothing.
+So collection is a **carry**:
+
+- The operator places the puck against the player at the rod's `t=0` end.
+- The rod reads its current `(t, r)`, then pushes the puck toward `t=1` with a
+  sequence of small positive-`dt` steps. Each step also applies a small random
+  rotation wobble (`±ROD_CARRY_WOBBLE_DR`) so the dataset sees how rotation
+  affects the carry, while the push keeps the puck in contact. Step size varies
+  within `[ROD_CARRY_STEP_MIN, ROD_CARRY_STEP_MAX]` so `dt` is not constant.
+- Every step is a recorded contact sample, appended to `data/rod_<name>.jsonl`
+  as it is taken, so a crash loses nothing.
+- One carry runs `t=0 → 1`. To cover rotation, the carry is repeated at several
+  base rotations (the rod is parked at the new rotation and the operator
+  repositions the puck at the `t=0` end between carries).
+- All moves are gentle (low `speed_mm_per_sec`) so the puck is carried, not
+  launched.
 
 This is the entire "training": the dataset is a direct, contact-rich record of
-how the rig behaves.
+how pushing the rod moves the puck.
 
 ## 2. The model (`robot/rod_model.py`)
 
@@ -165,9 +169,9 @@ python rod.py control --target X Y [--rod left-defense]
 
 | Constant | Meaning |
 | -------- | ------- |
-| `ROD_COLLECT_DT`, `ROD_COLLECT_DR` | Sweep step and rotation probe magnitudes. |
-| `ROD_COLLECT_SAMPLES` | Target sample count per collection run. |
-| `ROD_COLLECT_BURST` | Probe moves taken per contact before re-sweeping. |
+| `ROD_CARRY_STEP_MIN`, `ROD_CARRY_STEP_MAX` | Min/max positive-`dt` push per carry step. |
+| `ROD_CARRY_WOBBLE_DR` | Random rotation wobble per carry step. |
+| `ROD_COLLECT_DT`, `ROD_COLLECT_DR` | Probe magnitudes for the controller's re-acquire. |
 | `ROD_MOVE_SPEED_MM_S` | Gentle move speed for collection and control. |
 | `ROD_MODEL_K` | Neighbour count for locally-weighted regression. |
 | `ROD_CONTACT_MOVE_PX` | Puck motion above which a sample counts as contact. |
