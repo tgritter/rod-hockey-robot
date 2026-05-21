@@ -37,6 +37,7 @@ async def execute_sequence(sequence, player_id=PlayerID.CENTER):
         player = Generic.from_robot(robot=robot, name=component_name)
         for step in sequence:
             await player.do_command(step)
+        await player.do_command({"t": 0, "r": 0})
     finally:
         # Return the active rod to home pose, even on mid-sequence error
         print(f"Returning {component_name} to home pose.")

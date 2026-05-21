@@ -28,11 +28,13 @@ from engine.constants import (
 # X-axis: right (puck_x < center_x, closer to 0) vs left (puck_x >= center_x).
 
 CENTER_LEFT = [
-    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- center, puck on left
+    {"t": 0.85, "r": 100},  # TODO: calibrate -- center, puck on left
+    {"r": 300, "rpm": 400, "direction": "ccw"},
 ]
 
 CENTER_RIGHT = [
-    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- center, puck on right
+    {"t": 0.85, "r": 280},  # TODO: calibrate -- center, puck on right
+    {"r": 60, "rpm": 400, "direction": "cw"},
 ]
 
 _CENTER_PLAYBOOK = {
@@ -48,19 +50,29 @@ _CENTER_PLAYBOOK = {
 
 # Position sequences -- move puck to sweet spot
 RIGHT_WING_LEFT = [
-    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right wing position, puck on left
+    {"t": 0.5, "r": 115},  # TODO: calibrate -- right wing position, puck on left
+    {"t": 0.475, "r": 180, "direction": "ccw"},
+    {"r": 0, "rpm": 150},
 ]
 
 RIGHT_WING_RIGHT = [
-    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right wing position, puck on right
+    {"t": 0.5, "r": 265},  # TODO: calibrate -- right wing position, puck on right
+    {"r": 60, "rpm": 300, "direction": "ccw"},
 ]
 
 RIGHT_WING_BOTTOM_LEFT = [
-    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right wing position, puck bottom-left
+    {"t": 0.95, "r": 0.0},  # TODO: calibrate -- right wing position, puck bottom-left
+    { "r": 80, "direction": "ccw"},
+    {"t": 0.5},
+    {"t": 0.525, "r": 270, "direction": "cw"},
+    {"t": 0.5, "r": 180, "rpm": 400, "direction": "cw"},
 ]
 
 RIGHT_WING_BOTTOM_RIGHT = [
-    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right wing position, puck bottom-right
+    {"t": 0.95, "r": 0.0},  # TODO: calibrate -- right wing position, puck bottom-right
+    {"r": 295, "direction": "cw"},
+    {"t": 0.50},
+    {"r": 60, "rpm": 250},
 ]
 
 # Action sequences -- execute the play
@@ -103,11 +115,17 @@ def get_rw_sequence(side: str, action: str) -> list:
 # ── Right defenseman playbook ──────────────────────────────────────────────────
 
 RIGHT_D_LEFT = [
-    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right D, puck on left
+    {"t": 0.95, "r": 100},  # TODO: calibrate -- right D, puck on right
+    {"r": 300, "direction": "cw", "rpm": 220 },
 ]
 
 RIGHT_D_RIGHT = [
-    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- right D, puck on right
+
+
+
+        {"t": 0.95, "r": 260},  # TODO: calibrate -- right D, puck on left
+    {"r": 60, "direction": "ccw", "rpm": 150 },
+    
 ]
 
 _RIGHT_D_PLAYBOOK = {
@@ -119,11 +137,13 @@ _RIGHT_D_PLAYBOOK = {
 # ── Left defenseman playbook ───────────────────────────────────────────────────
 
 LEFT_D_LEFT = [
-    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- left D, puck on left (pass to center)
+    {"t": 0.8, "r": 115},  # TODO: calibrate -- left D, puck on left (pass to center)
+    {"r": 300, "direction": "cw", "rpm": 220 },
 ]
 
 LEFT_D_RIGHT = [
-    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- left D, puck on right (pass to center)
+    {"t": 0.8, "r": 255, "direction": "ccw"},  # TODO: calibrate -- left D, puck on right (pass to center)
+    {"r": 60, "direction": "ccw", "rpm": 220 },
 ]
 
 _LEFT_D_PLAYBOOK = {
@@ -137,16 +157,35 @@ _LEFT_D_PLAYBOOK = {
 # Zones are 2D (x + y), but playbook uses simple left/right for now.
 
 LEFT_WING_LEFT = [
-    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- left wing, puck on left
+    {"t": 0.2, "r": 120},  # TODO: calibrate -- left wing, puck on left
+    {"r": 300, "rpm": 400, "direction": "cw"},
 ]
 
-LEFT_WING_RIGHT = [
-    {"t": 0.0, "r": 0.0},  # TODO: calibrate -- left wing, puck on right
+LEFT_WING_RIGHT = [  # TODO: calibrate -- left wing, puck on right
+    {"t": 0.35, "r": 270},
+    {"t": 0.325, "r": 90, "direction": "cw"},
+    {"r": 300, "rpm": 500, "direction": "cw"},
+]
+
+LEFT_WING_BOTTOM_LEFT = [
+    {"t": 0.5, "r": 110},  # TODO: calibrate -- left wing, puck bottom-left
+    {"t": 0.75, "r": 150},
+    {"t": 1, "r": 120, "direction": "ccw"},
+    {"r": 100, "direction": "ccw"},
+    {"r": 300, "rpm": 200, "direction": "cw"},
+]
+
+LEFT_WING_BOTTOM_RIGHT = [
+    {"t": 0.5, "r": 260},  # TODO: calibrate -- left wing, puck bottom-right
+     {"t": 1, "r": 320, "direction": "cw"},
+     {"r": 100, "rpm": 300, "direction": "ccw"},
 ]
 
 _LEFT_WING_PLAYBOOK = {
-    "left":  LEFT_WING_LEFT,
-    "right": LEFT_WING_RIGHT,
+    "left":         LEFT_WING_LEFT,
+    "right":        LEFT_WING_RIGHT,
+    "bottom_left":  LEFT_WING_BOTTOM_LEFT,
+    "bottom_right": LEFT_WING_BOTTOM_RIGHT,
 }
 
 
