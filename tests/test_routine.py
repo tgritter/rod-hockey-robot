@@ -67,3 +67,35 @@ def test_format_relay_plan_describes_gates():
     text = format_relay_plan()
     # Four gates (one between each pair of legs), none after the last leg.
     assert text.count("gate:") == 4
+
+
+import asyncio
+
+import robot.routine as routine_mod
+
+
+def _fake_detect(return_value):
+    """Build an async stand-in for detect_puck that always returns one value."""
+    async def _detect(machine, camera_name=None):
+        return return_value
+    return _detect
+
+
+def test_wait_for_puck_at_rod_times_out(monkeypatch):
+    monkeypatch.setattr(routine_mod, "detect_puck", _fake_detect((None, None)))
+    result = asyncio.run(
+        routine_mod.wait_for_puck_at_rod(
+            machine=None, rod_x=200.0, timeout=0.2, interval=0.05
+        )
+    )
+    assert result is False
+
+
+def test_wait_for_puck_at_rod_detects_arrival(monkeypatch):
+    monkeypatch.setattr(routine_mod, "detect_puck", _fake_detect((205.0, 400.0)))
+    result = asyncio.run(
+        routine_mod.wait_for_puck_at_rod(
+            machine=None, rod_x=200.0, tol=30.0, timeout=1.0, interval=0.05
+        )
+    )
+    assert result is True

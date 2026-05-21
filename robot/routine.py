@@ -8,6 +8,8 @@ puck has reached the next rod before that rod acts. See
 docs/superpowers/specs/2026-05-21-coordinated-relay-routine-design.md.
 """
 
+import asyncio
+
 from engine.constants import (
     PlayerID,
     center_x, min_y_center, max_y_center,
@@ -24,6 +26,11 @@ from robot.const import (
     RELAY_VISION_POLL_INTERVAL_S,
 )
 from robot.playbook import RELAY
+
+from viam.components.generic import Generic
+
+from robot.execution import _PLAYER_TO_COMPONENT
+from robot.vision import detect_puck
 
 # Per-rod translation band: t=0 -> min_y, t=1 -> max_y (game pixels).
 _ROD_Y_BAND = {
@@ -77,3 +84,27 @@ def format_relay_plan() -> str:
                 f"(x={_ROD_X[nxt]:.0f})"
             )
     return "\n".join(lines)
+
+
+async def wait_for_puck_at_rod(machine, rod_x,
+                               tol=RELAY_GATE_TOLERANCE_PX,
+                               timeout=RELAY_GATE_TIMEOUT_S,
+                               interval=RELAY_VISION_POLL_INTERVAL_S) -> bool:
+    """Poll vision until the puck's x is within `tol` of `rod_x`.
+
+    Returns True once the puck arrives, or False if `timeout` seconds elapse
+    first. `machine` is an open RobotClient connection.
+    """
+    deadline = asyncio.get_running_loop().time() + timeout
+    while asyncio.get_running_loop().time() < deadline:
+        puck_x, _ = await detect_puck(machine, RELAY_CAMERA)
+        if puck_x is not None and puck_reached_rod(puck_x, rod_x, tol):
+            return True
+        await asyncio.sleep(interval)
+    return False
+
+
+async def home_all(components: dict) -> None:
+    """Return every rod in `components` to home pose (t=0, r=0) concurrently."""
+    print("Homing all rods.")
+    await asyncio.gather(*[c.do_command({"t": 0, "r": 0}) for c in components.values()])
