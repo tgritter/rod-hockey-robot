@@ -189,6 +189,42 @@ _LEFT_WING_PLAYBOOK = {
 }
 
 
+# ── Coordinated relay routine ──────────────────────────────────────────────────
+#
+# Ordered legs for the five-rod relay: Left D -> Right D -> Center ->
+# Left Wing -> Right Wing -> SHOT. Each leg's `t` (translation) is computed at
+# runtime from the puck position, so only `r` / `rpm` / `direction` are stored.
+# The last leg's `pass_step` is the shot.
+
+RELAY = [
+    {
+        "player": PlayerID.LEFT_D,
+        "receive_r": 90,                                              # TODO: calibrate
+        "pass_step": {"r": 300, "rpm": 220, "direction": "cw"},       # TODO: calibrate
+    },
+    {
+        "player": PlayerID.RIGHT_D,
+        "receive_r": 90,                                              # TODO: calibrate
+        "pass_step": {"r": 60, "rpm": 220, "direction": "ccw"},       # TODO: calibrate
+    },
+    {
+        "player": PlayerID.CENTER,
+        "receive_r": 90,                                              # TODO: calibrate
+        "pass_step": {"r": 60, "rpm": 300, "direction": "ccw"},       # TODO: calibrate
+    },
+    {
+        "player": PlayerID.LEFT_WING,
+        "receive_r": 90,                                              # TODO: calibrate
+        "pass_step": {"r": 300, "rpm": 300, "direction": "cw"},       # TODO: calibrate
+    },
+    {
+        "player": PlayerID.RIGHT_WING,
+        "receive_r": 90,                                              # TODO: calibrate
+        "pass_step": {"r": 0, "rpm": 400, "direction": "ccw"},        # TODO: calibrate -- SHOT
+    },
+]
+
+
 # ── Public API ─────────────────────────────────────────────────────────────────
 
 def _center_side(puck_x: float) -> str:
