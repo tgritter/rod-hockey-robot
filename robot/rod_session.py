@@ -10,7 +10,7 @@ from viam.components.generic import Generic
 from robot.const import (
     ROD_COLLECT_DT, ROD_COLLECT_DR, ROD_COLLECT_GRID_T, ROD_COLLECT_GRID_R,
     ROD_MOVE_SPEED_MM_S, ROD_MAX_PUCK_STEP_PX, ROD_TARGET_TOL_PX,
-    ROD_MAX_CONTROL_ITERS,
+    ROD_MAX_CONTROL_ITERS, ROD_CONTACT_MOVE_PX,
 )
 from robot.rod_model import dataset_path, append_sample, puck_step_toward
 from robot.vision import detect_puck_px
@@ -67,5 +67,80 @@ async def collect_dataset(machine, rod_name):
                     await comp.do_command({"t": bt, "r": br,
                                            "speed_mm_per_sec": ROD_MOVE_SPEED_MM_S})
         print(f"Collected {n} samples -> {path}")
+    finally:
+        await comp.do_command({"t": 0.0, "r": 0.0})
+
+
+async def _reacquire(machine, comp, rod_name, t, r):
+    """Probe four small moves to regain puck contact after control is lost.
+
+    Returns (t, r, regained). Each probe is recorded as a sample; contact is
+    regained when a probe moves the puck more than ROD_CONTACT_MOVE_PX.
+    """
+    path = dataset_path(rod_name)
+    probes = [(ROD_COLLECT_DT, 0.0), (-ROD_COLLECT_DT, 0.0),
+              (0.0, ROD_COLLECT_DR), (0.0, -ROD_COLLECT_DR)]
+    for d_t, d_r in probes:
+        puck = await detect_puck_px(machine)
+        if puck is None:
+            continue
+        t2 = min(1.0, max(0.0, t + d_t))
+        r2 = (r + d_r) % 360.0
+        resp = await comp.do_command({"t": t2, "r": r2,
+                                      "speed_mm_per_sec": ROD_MOVE_SPEED_MM_S})
+        puck2 = await detect_puck_px(machine)
+        base_t, base_r = t, r
+        t, r = resp.get("t_final", t2), resp.get("r_final", r2)
+        if puck2 is not None:
+            append_sample(path, t=base_t, r=base_r, puck=puck,
+                          dt=t2 - base_t, dr=d_r, puck2=puck2)
+            if _dist(puck, puck2) > ROD_CONTACT_MOVE_PX:
+                return t, r, True
+    return t, r, False
+
+
+async def carry_puck(machine, rod_name, model, target):
+    """Closed-loop carry the puck to a target camera-pixel position.
+
+    Each iteration: observe the puck, ask the model for the move that nudges it
+    toward the target, command that gentle move, and record the real outcome as
+    a new sample. Returns True if the puck reaches the target. Homes on exit.
+    """
+    comp = Generic.from_robot(robot=machine, name=rod_name)
+    path = dataset_path(rod_name)
+    pos = await comp.do_command({"cmd": "get_position"})
+    t, r = pos["t"], pos["r"]
+    try:
+        for i in range(ROD_MAX_CONTROL_ITERS):
+            puck = await detect_puck_px(machine)
+            if puck is None:
+                print("Lost sight of the puck — aborting.")
+                return False
+            err = _dist(puck, target)
+            print(f"iter {i}: puck={puck} target={target} err={err:.0f}px "
+                  f"t={t:.2f} r={r:.0f}")
+            if err <= ROD_TARGET_TOL_PX:
+                print("Puck delivered to target.")
+                return True
+            d_puck = puck_step_toward(puck, target, ROD_MAX_PUCK_STEP_PX)
+            d_t, d_r, controllable = model.solve(t, r, puck, d_puck)
+            if not controllable:
+                print("  no reliable control here — re-acquiring the puck")
+                t, r, regained = await _reacquire(machine, comp, rod_name, t, r)
+                if not regained:
+                    print("Could not re-acquire the puck — aborting.")
+                    return False
+                continue
+            t2 = min(1.0, max(0.0, t + d_t))
+            r2 = (r + d_r) % 360.0
+            resp = await comp.do_command({"t": t2, "r": r2,
+                                          "speed_mm_per_sec": ROD_MOVE_SPEED_MM_S})
+            puck2 = await detect_puck_px(machine)
+            if puck2 is not None:
+                append_sample(path, t=t, r=r, puck=puck,
+                              dt=t2 - t, dr=d_r, puck2=puck2)
+            t, r = resp.get("t_final", t2), resp.get("r_final", r2)
+        print("Hit the iteration cap without reaching the target.")
+        return False
     finally:
         await comp.do_command({"t": 0.0, "r": 0.0})
