@@ -56,3 +56,26 @@ RELAY_CONTACT_MOVE_PX = 15.0   # TODO: calibrate
 # Catch sweep speed — kept low so the player corrals the puck instead of
 # batting it away (a fast sweep launches the puck on the low-friction table).
 RELAY_CATCH_SPEED_MM_S = 30.0  # TODO: calibrate
+
+
+# ============================================================
+#  One-rod puck control
+# ============================================================
+
+# Data collection — probe move magnitudes and the base-state grid.
+ROD_COLLECT_DT      = 0.06
+ROD_COLLECT_DR      = 25.0
+ROD_COLLECT_GRID_T  = 5
+ROD_COLLECT_GRID_R  = 5
+ROD_MOVE_SPEED_MM_S = 30.0     # gentle — nudge the puck, never launch it
+
+# Model — locally-weighted regression.
+ROD_MODEL_K         = 8        # neighbours per local fit
+ROD_CONTACT_MOVE_PX = 8.0      # puck motion above which a sample is "contact"
+
+# Controller.
+ROD_MAX_PUCK_STEP_PX  = 25.0   # max desired puck step per control iteration
+ROD_MAX_STEP_T        = 0.12   # clamp on one commanded translation move
+ROD_MAX_STEP_R        = 45.0   # clamp on one commanded rotation move (degrees)
+ROD_TARGET_TOL_PX     = 20.0   # puck-to-target distance counting as arrived
+ROD_MAX_CONTROL_ITERS = 40
