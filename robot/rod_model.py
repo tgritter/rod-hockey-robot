@@ -118,3 +118,18 @@ class RodModel:
         j, _ = self._local_jacobian(t, r, puck)
         dp = j @ np.array([d_t, d_r], float)
         return float(dp[0]), float(dp[1])
+
+    def solve(self, t, r, puck, d_puck_desired):
+        """Return (d_t, d_r, controllable) to achieve a desired puck displacement.
+
+        d_t / d_r are clamped to ROD_MAX_STEP_T / ROD_MAX_STEP_R. `controllable`
+        is False when the local neighbourhood shows no reliable contact (most
+        neighbours barely moved the puck).
+        """
+        j, idx = self._local_jacobian(t, r, puck)
+        move = np.linalg.pinv(j) @ np.array(d_puck_desired, float)
+        d_t = float(np.clip(move[0], -ROD_MAX_STEP_T, ROD_MAX_STEP_T))
+        d_r = float(np.clip(move[1], -ROD_MAX_STEP_R, ROD_MAX_STEP_R))
+        magnitudes = np.linalg.norm(self._responses[idx], axis=1)
+        controllable = bool(np.median(magnitudes) > ROD_CONTACT_MOVE_PX)
+        return d_t, d_r, controllable

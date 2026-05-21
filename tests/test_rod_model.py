@@ -84,3 +84,40 @@ def test_rodmodel_rejects_empty_dataset():
         assert False, "expected ValueError"
     except ValueError:
         pass
+
+
+def test_solve_inverts_the_jacobian():
+    j = [[2.0, 0.1], [0.3, -1.5]]
+    model = RodModel(_linear_samples(j))
+    d_t, d_r, controllable = model.solve(0.5, 180.0, (270.0, 150.0),
+                                         d_puck_desired=(0.2, -0.3))
+    # The desired displacement is small enough that the solved move stays
+    # within the clamps, so applying it reproduces the desired puck step.
+    dx, dy = model.predict(0.5, 180.0, (270.0, 150.0), d_t, d_r)
+    assert abs(dx - 0.2) < 1e-2
+    assert abs(dy - (-0.3)) < 1e-2
+    assert controllable is True
+
+
+def test_solve_clamps_the_move():
+    j = [[0.05, 0.0], [0.0, 0.05]]   # tiny gains -> huge move requested
+    model = RodModel(_linear_samples(j))
+    d_t, d_r, _ = model.solve(0.5, 180.0, (270.0, 150.0),
+                              d_puck_desired=(500.0, 500.0))
+    assert abs(d_t) <= 0.12 + 1e-9
+    assert abs(d_r) <= 45.0 + 1e-9
+
+
+def test_solve_reports_not_controllable_when_puck_never_moves():
+    # Samples where the puck barely responds to any move.
+    rng = np.random.default_rng(1)
+    samples = []
+    for _ in range(40):
+        t = rng.uniform(0, 1); r = rng.uniform(0, 360)
+        px = rng.uniform(0, 540); py = rng.uniform(0, 300)
+        dt = rng.uniform(-0.1, 0.1); dr = rng.uniform(-30, 30)
+        samples.append(Sample(t, r, px, py, dt, dr, px, py))   # no puck motion
+    model = RodModel(samples)
+    _, _, controllable = model.solve(0.5, 180.0, (270.0, 150.0),
+                                     d_puck_desired=(10.0, 10.0))
+    assert controllable is False
