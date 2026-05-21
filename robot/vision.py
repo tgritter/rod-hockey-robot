@@ -19,7 +19,7 @@ from engine.constants import WIDTH, HEIGHT
 
 # Class name used by the vision service to label field corner markers
 _CORNER_CLASS = "lime-green"
-_PUCK_CLASS   = "green"
+_PUCK_CLASS   = "orange"
 
 
 def get_center(bbox):
