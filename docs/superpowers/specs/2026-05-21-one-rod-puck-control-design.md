@@ -77,22 +77,27 @@ through many small moves, recording one sample per move:
 (`puck_x/y`) and after (`puck_x2/y2`) from `vision-1`, and the move
 `(dt, dr)`.
 
-Collection procedure:
+Collection procedure — **contact-following**. A blind grid of probe moves
+fails: at most `(t, r)` states the player is nowhere near the puck, so the
+probe touches nothing and the dataset is almost entirely no-contact samples,
+useless for learning control. Instead the collector follows the puck:
 
-- Iterate over a coarse grid of base states `(t, r)`. At each base state, issue
-  several **small** probe moves spanning `±Δt` and `±Δr` so the local response
-  is sampled in every direction.
+- **Sweep to contact.** Step the rod's translation in small increments until
+  the puck moves more than `ROD_CONTACT_MOVE_PX` — the player is now on the
+  puck. Each sweep step is recorded as a sample. If a full sweep finds nothing,
+  the puck is out of reach: pause and ask the operator to reposition it.
+- **Burst-probe.** From the contact state, take `ROD_COLLECT_BURST` small
+  random probe moves spanning `±Δt` and `±Δr`, recording each. Because the
+  player starts the burst on the puck, these are contact samples.
+- **Follow.** The probes nudge the puck along; the player rides with it. When a
+  probe loses sight of the puck, the next sweep re-acquires it.
+- Repeat until `ROD_COLLECT_SAMPLES` samples are recorded.
 - Every move is gentle (low `speed_mm_per_sec`) so the puck is nudged, not
-  launched.
-- After each move, detect the puck. Record the sample regardless of whether the
-  puck moved — no-motion samples bound the no-contact region.
-- If the puck is not detected, or has left the rod's reachable span, pause and
-  print a clear request for the human to reposition it; resume on input.
-- Append every sample to `data/rod_<name>.jsonl` as it is taken, so a crash
-  loses nothing.
+  launched. Every move (sweep step and probe) is appended to
+  `data/rod_<name>.jsonl` as it is taken, so a crash loses nothing.
 
-This is the entire "training": the dataset is a direct record of how the rig
-behaves.
+This is the entire "training": the dataset is a direct, contact-rich record of
+how the rig behaves.
 
 ## 2. The model (`robot/rod_model.py`)
 
@@ -160,8 +165,9 @@ python rod.py control --target X Y [--rod left-defense]
 
 | Constant | Meaning |
 | -------- | ------- |
-| `ROD_COLLECT_DT`, `ROD_COLLECT_DR` | Probe move magnitudes during collection. |
-| `ROD_COLLECT_GRID_T`, `ROD_COLLECT_GRID_R` | Base-state grid resolution. |
+| `ROD_COLLECT_DT`, `ROD_COLLECT_DR` | Sweep step and rotation probe magnitudes. |
+| `ROD_COLLECT_SAMPLES` | Target sample count per collection run. |
+| `ROD_COLLECT_BURST` | Probe moves taken per contact before re-sweeping. |
 | `ROD_MOVE_SPEED_MM_S` | Gentle move speed for collection and control. |
 | `ROD_MODEL_K` | Neighbour count for locally-weighted regression. |
 | `ROD_CONTACT_MOVE_PX` | Puck motion above which a sample counts as contact. |

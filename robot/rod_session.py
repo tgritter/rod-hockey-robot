@@ -3,10 +3,12 @@
 See docs/superpowers/specs/2026-05-21-one-rod-puck-control-design.md.
 """
 
+import random
+
 from viam.components.generic import Generic
 
 from robot.const import (
-    ROD_COLLECT_DT, ROD_COLLECT_DR, ROD_COLLECT_GRID_T, ROD_COLLECT_GRID_R,
+    ROD_COLLECT_DT, ROD_COLLECT_DR, ROD_COLLECT_SAMPLES, ROD_COLLECT_BURST,
     ROD_MOVE_SPEED_MM_S, ROD_MAX_PUCK_STEP_PX, ROD_TARGET_TOL_PX,
     ROD_MAX_CONTROL_ITERS, ROD_CONTACT_MOVE_PX,
 )
@@ -28,42 +30,76 @@ async def _puck_or_pause(machine):
         input("  puck not visible — reposition it on the rod and press Enter...")
 
 
-async def collect_dataset(machine, rod_name):
-    """Drive the rod through a grid of probe moves, recording real samples.
+async def _record_move(machine, comp, path, t, r, d_t, d_r):
+    """Command one gentle move and record it as a sample.
 
-    For each base state on a (t, r) grid, the rod issues four small probe moves
-    (+/- Δt, +/- Δr), returning to the base state between probes. Every probe is
-    recorded as a sample in data/rod_<rod>.jsonl. The puck is observed before
-    and after each probe via vision-1. Slow, gentle moves throughout.
+    Returns (new_t, new_r, puck2, moved_px). puck2 and moved_px are None if the
+    puck was not seen before or after the move.
+    """
+    puck = await detect_puck_px(machine)
+    if puck is None:
+        return t, r, None, None
+    t2 = min(1.0, max(0.0, t + d_t))
+    r2 = (r + d_r) % 360.0
+    resp = await comp.do_command({"t": t2, "r": r2,
+                                  "speed_mm_per_sec": ROD_MOVE_SPEED_MM_S})
+    puck2 = await detect_puck_px(machine)
+    new_t, new_r = resp.get("t_final", t2), resp.get("r_final", r2)
+    if puck2 is None:
+        return new_t, new_r, None, None
+    append_sample(path, t=t, r=r, puck=puck, dt=t2 - t, dr=d_r, puck2=puck2)
+    return new_t, new_r, puck2, _dist(puck, puck2)
+
+
+async def collect_dataset(machine, rod_name, target_samples=ROD_COLLECT_SAMPLES):
+    """Collect a contact-rich dataset by following the puck with the rod.
+
+    Repeatedly: sweep the rod's translation until the puck moves (contact),
+    then take a burst of small random probe moves from that contact state — so
+    every burst move is a real contact sample. When a probe loses sight of the
+    puck the next sweep re-finds it; if the puck leaves reach entirely the
+    operator is asked to reposition it. All moves are slow and gentle. Every
+    move (sweep step and probe) is recorded to data/rod_<rod>.jsonl.
     """
     comp = Generic.from_robot(robot=machine, name=rod_name)
     path = dataset_path(rod_name)
-    base_ts = [i / (ROD_COLLECT_GRID_T - 1) for i in range(ROD_COLLECT_GRID_T)]
-    base_rs = [i * 300.0 / (ROD_COLLECT_GRID_R - 1) for i in range(ROD_COLLECT_GRID_R)]
-    probes = [(ROD_COLLECT_DT, 0.0), (-ROD_COLLECT_DT, 0.0),
-              (0.0, ROD_COLLECT_DR), (0.0, -ROD_COLLECT_DR)]
     n = 0
     try:
-        for bt in base_ts:
-            for br in base_rs:
-                await comp.do_command({"t": bt, "r": br,
-                                       "speed_mm_per_sec": ROD_MOVE_SPEED_MM_S})
-                for d_t, d_r in probes:
-                    t2 = min(1.0, max(0.0, bt + d_t))
-                    r2 = (br + d_r) % 360.0
-                    puck = await _puck_or_pause(machine)
-                    await comp.do_command({"t": t2, "r": r2,
-                                           "speed_mm_per_sec": ROD_MOVE_SPEED_MM_S})
-                    puck2 = await detect_puck_px(machine)
-                    if puck2 is not None:
-                        append_sample(path, t=bt, r=br, puck=puck,
-                                      dt=t2 - bt, dr=d_r, puck2=puck2)
-                        n += 1
-                        print(f"sample {n}: base=({bt:.2f},{br:.0f}) "
-                              f"move=({t2 - bt:+.2f},{d_r:+.0f}) "
-                              f"puck {puck} -> {puck2}")
-                    await comp.do_command({"t": bt, "r": br,
-                                           "speed_mm_per_sec": ROD_MOVE_SPEED_MM_S})
+        await comp.do_command({"t": 0.0, "r": 0.0})
+        t, r, sweep_dir = 0.0, 0.0, 1.0
+        while n < target_samples:
+            # --- sweep the rod until the puck moves (contact) ---
+            anchor = await _puck_or_pause(machine)
+            in_contact = False
+            for _ in range(int(2.0 / ROD_COLLECT_DT) + 2):
+                if n >= target_samples:
+                    break
+                if not (0.0 <= t + sweep_dir * ROD_COLLECT_DT <= 1.0):
+                    sweep_dir = -sweep_dir
+                t, r, puck2, moved = await _record_move(
+                    machine, comp, path, t, r, sweep_dir * ROD_COLLECT_DT, 0.0)
+                if moved is not None:
+                    n += 1
+                    print(f"sample {n}/{target_samples}: sweep t={t:.2f} "
+                          f"moved {moved:.0f}px", flush=True)
+                if puck2 is not None and _dist(puck2, anchor) > ROD_CONTACT_MOVE_PX:
+                    in_contact = True
+                    break
+            if not in_contact:
+                continue
+            # --- burst of contact probes, following the puck ---
+            for _ in range(ROD_COLLECT_BURST):
+                if n >= target_samples:
+                    break
+                d_t = random.uniform(-ROD_COLLECT_DT, ROD_COLLECT_DT)
+                d_r = random.uniform(-ROD_COLLECT_DR, ROD_COLLECT_DR)
+                t, r, puck2, moved = await _record_move(
+                    machine, comp, path, t, r, d_t, d_r)
+                if moved is None:
+                    break
+                n += 1
+                print(f"sample {n}/{target_samples}: probe t={t:.2f} r={r:.0f} "
+                      f"moved {moved:.0f}px", flush=True)
         print(f"Collected {n} samples -> {path}")
     finally:
         await comp.do_command({"t": 0.0, "r": 0.0})

@@ -62,11 +62,11 @@ RELAY_CATCH_SPEED_MM_S = 30.0  # TODO: calibrate
 #  One-rod puck control
 # ============================================================
 
-# Data collection — probe move magnitudes and the base-state grid.
-ROD_COLLECT_DT      = 0.06
-ROD_COLLECT_DR      = 25.0
-ROD_COLLECT_GRID_T  = 5
-ROD_COLLECT_GRID_R  = 5
+# Data collection — contact-following: sweep to the puck, then burst-probe.
+ROD_COLLECT_DT      = 0.06     # translation step for sweeps and probes
+ROD_COLLECT_DR      = 25.0     # rotation probe magnitude (degrees)
+ROD_COLLECT_SAMPLES = 150      # target number of samples per collection run
+ROD_COLLECT_BURST   = 6        # probe moves taken per contact before re-sweeping
 ROD_MOVE_SPEED_MM_S = 30.0     # gentle — nudge the puck, never launch it
 
 # Model — locally-weighted regression.
