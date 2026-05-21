@@ -118,3 +118,17 @@ class PuckModel:
         _, _, nd = self._neighbours(state)
         mean_d = float(nd.mean())
         return AUTO_CONFIDENCE_SCALE / (AUTO_CONFIDENCE_SCALE + mean_d)
+
+    def solve(self, state, d_puck_desired):
+        """Return (d_t, d_r, confidence) to achieve a desired puck displacement.
+
+        d_t / d_r are clamped to AUTO_MAX_STEP_T / AUTO_MAX_STEP_R. With no data,
+        returns a zero move and confidence 0.
+        """
+        if not self.samples:
+            return 0.0, 0.0, 0.0
+        j = self._local_jacobian(state)
+        move = np.linalg.pinv(j) @ np.array(d_puck_desired, float)
+        d_t = float(np.clip(move[0], -AUTO_MAX_STEP_T, AUTO_MAX_STEP_T))
+        d_r = float(np.clip(move[1], -AUTO_MAX_STEP_R, AUTO_MAX_STEP_R))
+        return d_t, d_r, self.confidence(state)

@@ -75,3 +75,28 @@ def test_confidence_is_near_zero_far_from_the_data():
 
 def test_confidence_with_empty_model_is_zero():
     assert PuckModel([]).confidence((0.5, 180.0, 270.0, 150.0)) == 0.0
+
+
+def test_solve_inverts_the_jacobian():
+    j = [[2.0, 0.1], [0.3, -1.5]]
+    model = PuckModel(_linear_samples(j))
+    state = (0.5, 180.0, 270.0, 150.0)
+    d_t, d_r, conf = model.solve(state, d_puck_desired=(0.2, -0.3))
+    # Small desired step -> solved move stays within clamps -> reproduces it.
+    dx, dy = model.predict(state, d_t, d_r)
+    assert abs(dx - 0.2) < 1e-2
+    assert abs(dy - (-0.3)) < 1e-2
+    assert 0.0 <= conf <= 1.0
+
+
+def test_solve_clamps_the_move():
+    j = [[0.05, 0.0], [0.0, 0.05]]
+    model = PuckModel(_linear_samples(j))
+    d_t, d_r, _ = model.solve((0.5, 180.0, 270.0, 150.0),
+                              d_puck_desired=(500.0, 500.0))
+    assert abs(d_t) <= 0.10 + 1e-9
+    assert abs(d_r) <= 30.0 + 1e-9
+
+
+def test_solve_with_empty_model_is_zero():
+    assert PuckModel([]).solve((0.5, 180.0, 270.0, 150.0), (10.0, 10.0)) == (0.0, 0.0, 0.0)
