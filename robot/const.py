@@ -84,3 +84,20 @@ ROD_MAX_STEP_T        = 0.12   # clamp on one commanded translation move
 ROD_MAX_STEP_R        = 45.0   # clamp on one commanded rotation move (degrees)
 ROD_TARGET_TOL_PX     = 20.0   # puck-to-target distance counting as arrived
 ROD_MAX_CONTROL_ITERS = 40
+
+
+# ============================================================
+#  Autonomous puck control
+# ============================================================
+
+AUTO_MOVE_SPEED_MM_S      = 30.0   # gentle move speed — carry, never launch
+AUTO_MAX_STEP_T           = 0.10   # clamp on one commanded translation move
+AUTO_MAX_STEP_R           = 30.0   # clamp on one commanded rotation move (deg)
+AUTO_CONTACT_MOVE_PX      = 8.0    # puck motion above which a move "made contact"
+AUTO_TARGET_TOL_PX        = 22.0   # puck-to-target distance counting as arrived
+AUTO_MAX_PUCK_STEP_PX     = 25.0   # max desired puck step per cycle
+AUTO_MODEL_K              = 8      # neighbours for locally-weighted regression
+AUTO_CONFIDENCE_SCALE     = 1.0    # neighbour distance at which confidence = 0.5
+AUTO_CONFIDENCE_THRESHOLD = 0.5    # confidence at/above which the loop exploits
+AUTO_EXPLORE_DT           = 0.07   # magnitude of exploratory translation moves
+AUTO_EXPLORE_DR           = 20.0   # magnitude of exploratory rotation moves
