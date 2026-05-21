@@ -111,6 +111,21 @@ Sends the same `(t, r)` to every hockey-player component concurrently — useful
 python move.py 0.5 90
 ```
 
+### One-rod puck control (learns from reality)
+
+Trains a single rod to control the puck by learning the rig's real behaviour
+from `vision-1` + `hockey-player` data — no simulation, no hardcoded geometry.
+
+```bash
+python rod.py collect                       # drive the rod, record real samples
+python rod.py control --target 300 220      # carry the puck to a pixel target
+```
+
+`collect` writes `data/rod_<rod>.jsonl`. `control` fits a locally-weighted
+model from that dataset and runs a closed-loop controller. Tuning lives in
+`robot/const.py` (`ROD_*`). See
+`docs/superpowers/specs/2026-05-21-one-rod-puck-control-design.md`.
+
 ### Run the coordinated relay routine
 
 Relays the puck through all five rods and finishes with a shot. Each rod
