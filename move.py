@@ -9,7 +9,7 @@ import sys
 from viam.robot.client import RobotClient
 from viam.components.generic import Generic
 from robot.const import ROBOT_ADDRESS, ROBOT_API_KEY, ROBOT_API_KEY_ID
-from src.common import PLAYERS
+from module.constants import PLAYERS
 
 async def move_one(robot, name, payload):
     try:

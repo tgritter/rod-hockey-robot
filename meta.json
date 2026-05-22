@@ -13,7 +13,7 @@
   ],
   "applications": null,
   "markdown_link": "README_MODULE.md",
-  "entrypoint": "dist/main",
+  "entrypoint": "dist/module",
   "first_run": "",
   "build": {
     "build": "./build-module.sh",

@@ -1,6 +1,6 @@
 from typing import ClassVar, Mapping, Optional, Sequence, Tuple
 
-from ...common import PLAYERS
+from ..constants import PLAYERS
 
 from typing_extensions import Self
 from viam.proto.app.robot import ComponentConfig

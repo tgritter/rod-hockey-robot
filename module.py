@@ -1,6 +1,6 @@
 import asyncio
 from viam.module.module import Module
-from models.rod_hockey_game import RodHockeyGame as RodHockeyGameModel
+from module.models.rod_hockey_game import RodHockeyGame as RodHockeyGameModel
 
 
 if __name__ == '__main__':
