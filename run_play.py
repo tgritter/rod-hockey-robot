@@ -60,7 +60,7 @@ async def main():
     if args.player == "left_d" and args.side == "right":
         await asyncio.gather(
             execute_sequence(sequence, player_id),
-            execute_sequence([{"t": 0.4}], PlayerID.LEFT_WING),
+            execute_sequence([{"t": 0.6}], PlayerID.LEFT_WING),
         )
         await execute_sequence([{"t": 0}], PlayerID.LEFT_WING)
     else:

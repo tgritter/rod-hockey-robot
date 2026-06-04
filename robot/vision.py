@@ -19,7 +19,7 @@ from engine.constants import WIDTH, HEIGHT
 
 # Class name used by the vision service to label field corner markers
 _CORNER_CLASS = "lime-green"
-_PUCK_CLASS   = "green"
+_PUCK_CLASS   = "orange"
 
 
 def get_center(bbox):
@@ -67,43 +67,27 @@ async def _connect():
     return await RobotClient.at_address(ROBOT_ADDRESS, opts)
 
 
-async def get_puck_game_coordinates():
-    """Connect to the robot, detect the puck, and return its game-space (x, y).
+async def get_puck_camera_coordinates():
+    """Connect to the robot, detect the puck, and return its raw camera (x, y).
 
-    Fetches puck detections from vision-1 and corner detections from vision-2
-    to derive dynamic camera bounds. Falls back to hardcoded bounds if corners
-    are not found. Returns (game_x, game_y) in pixels, or (None, None) if no
-    puck is detected.
+    Returns the averaged center of all puck detections in camera pixel space,
+    or (None, None) if no puck is detected.
     """
     machine = await _connect()
     try:
         vision1 = VisionClient.from_robot(machine, "vision-1")
-        vision2 = VisionClient.from_robot(machine, "vision-2")
 
-        puck_detections, corner_detections = await asyncio.gather(
-            vision1.get_detections_from_camera("C270"),
-            vision2.get_detections_from_camera("C270"),
-        )
+        puck_detections = await vision1.get_detections_from_camera("dynamic-crop")
 
         pink = [d for d in puck_detections if d.class_name == _PUCK_CLASS]
         if not pink:
             return None, None
 
-        # Pick the median detection to reduce noise
-        pink.sort(key=lambda d: d.y_min)
-        puck = pink[len(pink) // 2]
-        camera_x, camera_y = get_center(puck)
+        centers = [get_center(d) for d in pink]
+        camera_x = sum(c[0] for c in centers) / len(centers)
+        camera_y = sum(c[1] for c in centers) / len(centers)
         print(f"Camera puck: x={camera_x:.1f}, y={camera_y:.1f}")
-
-        bounds = _field_bounds_from_corners(corner_detections)
-        if bounds:
-            cam_x_min, cam_x_max, cam_y_min, cam_y_max = bounds
-        else:
-            cam_x_min, cam_x_max = CAMERA_X_MIN, CAMERA_X_MAX
-            cam_y_min, cam_y_max = CAMERA_Y_MIN, CAMERA_Y_MAX
-
-        game_x, game_y = scale_puck_coords(camera_x, camera_y, cam_x_min, cam_x_max, cam_y_min, cam_y_max)
-        return game_x, game_y
+        return camera_x, camera_y
 
     finally:
         await machine.close()
@@ -130,7 +114,7 @@ async def _main():
         vision2 = VisionClient.from_robot(machine, "vision-2")
 
         puck_detections, corner_detections = await asyncio.gather(
-            vision1.get_detections_from_camera("C270"),
+            vision1.get_detections_from_camera("dynamic-crop"),
             vision2.get_detections_from_camera("C270"),
         )
 
@@ -151,16 +135,16 @@ async def _main():
             cam_y_min, cam_y_max = CAMERA_Y_MIN, CAMERA_Y_MAX
             print("No corner markers detected — using hardcoded camera bounds.")
 
-        # Find puck
+        # Find puck — average all centers for a stable position
         pink = [d for d in puck_detections if d.class_name == _PUCK_CLASS]
         if not pink:
             print("No puck detected.")
             return
 
-        pink.sort(key=lambda d: d.y_min)
-        puck = pink[len(pink) // 2]
-        camera_x, camera_y = get_center(puck)
-        print(f"Camera puck:      x={camera_x:.1f}, y={camera_y:.1f}")
+        centers = [get_center(d) for d in pink]
+        camera_x = sum(c[0] for c in centers) / len(centers)
+        camera_y = sum(c[1] for c in centers) / len(centers)
+        print(f"Camera puck ({len(pink)} detections):  x={camera_x:.1f}, y={camera_y:.1f}")
 
         # Map to full game coordinates using field bounds
         # Camera is landscape: camera x → game y (long axis), camera y → game x (short axis)
