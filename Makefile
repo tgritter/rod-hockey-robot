@@ -1,11 +1,12 @@
-# Makefile for the rod-hockey-robot annotation/visualization server.
+# Makefile for rod-hockey-robot.
 #
-#   make start-annotation-server    # launch in the background
+#   make setup                      # install uv (if needed) + all deps into .venv (Linux/macOS)
+#   make start-annotation-server    # launch the annotation/visualization server in the background
 #   make stop-annotation-server     # stop it
 #   make restart-annotation-server  # stop then start
 #   make annotation-server-status   # is it running?
 #
-# Pass extra flags via ARGS, e.g.:
+# Pass extra server flags via ARGS, e.g.:
 #   make start-annotation-server ARGS="--scale 4 --port 8800"
 
 PY  := .venv/bin/python
@@ -14,7 +15,22 @@ LOG := /tmp/annotation-server.log
 URL := http://127.0.0.1:8765/
 ARGS ?=
 
-.PHONY: start-annotation-server stop-annotation-server restart-annotation-server annotation-server-status
+.PHONY: help setup start-annotation-server stop-annotation-server restart-annotation-server annotation-server-status
+
+help:
+	@echo "Targets:"
+	@echo "  make setup                      install uv (if needed) + dependencies into .venv"
+	@echo "  make start-annotation-server    start the annotation server ($(URL))"
+	@echo "  make stop-annotation-server     stop it"
+	@echo "  make restart-annotation-server  restart it"
+	@echo "  make annotation-server-status   show whether it is running"
+
+# Install uv (Linux/macOS) if it isn't already, then sync the project: uv
+# downloads the right Python (3.13) and every dependency into .venv.
+setup:
+	@command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
+	@export PATH="$$HOME/.local/bin:$$HOME/.cargo/bin:$$PATH"; uv sync
+	@echo "Setup complete — dependencies installed into .venv (Python managed by uv)."
 
 start-annotation-server:
 	@if [ -f $(PID) ] && kill -0 $$(cat $(PID)) 2>/dev/null; then \
