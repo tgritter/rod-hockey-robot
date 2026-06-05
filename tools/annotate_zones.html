@@ -30,7 +30,10 @@
       <button onclick="removeLast()">Remove last zone</button>
       <button onclick="saveZones()">Save</button>
     </div>
-    <div class="row"><label><input type="checkbox" id="showLegacy" checked onchange="redraw()"> show legacy boxes</label></div>
+    <div class="row">
+      <button onclick="refreshImage()">Refresh image</button>
+      <label><input type="checkbox" id="showLegacy" checked onchange="redraw()"> show legacy boxes</label>
+    </div>
     <div id="status"></div>
     <div class="row">zones (<span id="count">0</span>):</div>
     <div id="zonelist"></div>
@@ -143,6 +146,13 @@ async function saveZones(){
 }
 
 function setStatus(msg, err){ const s=document.getElementById('status'); s.textContent=msg; s.style.color = err?'#c00':'#060'; }
+
+function refreshImage(){
+  setStatus('refreshing image from dynamic-crop…');
+  IMG.onload = () => { redraw(); setStatus('image refreshed'); };
+  IMG.onerror = () => setStatus('refresh failed — robot unreachable or not exactly 4 corners', true);
+  IMG.src = '/live-image?ts=' + Date.now();
+}
 
 init();
 </script>

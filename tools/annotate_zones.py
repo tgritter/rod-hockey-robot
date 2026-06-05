@@ -21,6 +21,7 @@ Interaction:
 """
 
 import argparse
+import asyncio
 import json
 import os
 import sys
@@ -34,6 +35,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from PIL import Image
 
 from tools.seed_zones_from_legacy import LEGACY_ZONES, REF_W, REF_H
+from robot.const import ROBOT_ADDRESS, ROBOT_API_KEY, ROBOT_API_KEY_ID
+from viam.robot.client import RobotClient
+from viam.components.camera import Camera
 
 PLAYERS = ["center", "right_wing", "left_wing", "right_d", "left_d"]
 SIDES = ["left", "middle_left", "middle_right", "right", "bottom_left", "bottom_right"]
@@ -84,6 +88,26 @@ def _render_page(scale):
                 .replace("%SCALE%", str(scale)))
 
 
+async def _grab_live_crop_async():
+    opts = RobotClient.Options.with_api_key(api_key=ROBOT_API_KEY, api_key_id=ROBOT_API_KEY_ID)
+    machine = await RobotClient.at_address(ROBOT_ADDRESS, opts)
+    try:
+        cam = Camera.from_robot(machine, "dynamic-crop")
+        images, _ = await cam.get_images()
+        if not images:
+            raise RuntimeError("dynamic-crop returned no images")
+        return bytes(images[0].data)
+    finally:
+        await machine.close()
+
+
+def grab_live_crop():
+    """Fetch one fresh frame from the dynamic-crop camera; return (bytes, content_type)."""
+    data = asyncio.run(_grab_live_crop_async())
+    ctype = "image/png" if data[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
+    return data, ctype
+
+
 def _make_handler(image_path, out_path, width, height, scale):
     legacy = _legacy_boxes_px(width, height)
     existing = _existing_zones_px(out_path, width, height)
@@ -110,6 +134,12 @@ def _make_handler(image_path, out_path, width, height, scale):
                     data = f.read()
                 ctype = "image/jpeg" if image_path.lower().endswith((".jpg", ".jpeg")) else "image/png"
                 self._send(200, data, ctype)
+            elif path == "/live-image":
+                try:
+                    data, ctype = grab_live_crop()
+                    self._send(200, data, ctype)
+                except Exception as e:
+                    self._send(500, f"{type(e).__name__}: {e}", "text/plain")
             elif path == "/data":
                 self._send(200, json.dumps({
                     "width": width, "height": height,
