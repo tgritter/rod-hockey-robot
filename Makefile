@@ -15,11 +15,12 @@ LOG := /tmp/annotation-server.log
 URL := http://127.0.0.1:8765/
 ARGS ?=
 
-.PHONY: help setup start-annotation-server stop-annotation-server restart-annotation-server annotation-server-status
+.PHONY: help setup check-puck start-annotation-server stop-annotation-server restart-annotation-server annotation-server-status
 
 help:
 	@echo "Targets:"
 	@echo "  make setup                      install uv (if needed) + dependencies into .venv"
+	@echo "  make check-puck                 detect the puck and print its player/zone (read-only)"
 	@echo "  make start-annotation-server    start the annotation server ($(URL))"
 	@echo "  make stop-annotation-server     stop it"
 	@echo "  make restart-annotation-server  restart it"
@@ -31,6 +32,10 @@ setup:
 	@command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
 	@export PATH="$$HOME/.local/bin:$$HOME/.cargo/bin:$$PATH"; uv sync
 	@echo "Setup complete — dependencies installed into .venv (Python managed by uv)."
+
+# Read-only: detect the puck and report which player/zone it's in. Moves nothing.
+check-puck:
+	@$(PY) tools/check_puck.py
 
 start-annotation-server:
 	@if [ -f $(PID) ] && kill -0 $$(cat $(PID)) 2>/dev/null; then \
