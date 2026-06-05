@@ -29,28 +29,28 @@ from engine.constants import (
 # area that would otherwise fall inside the LEFT_D x range.
 _ZONES = [
     # LEFT_WING — behind goal (checked first; y overrides x-based zones below)
-    {"player": PlayerID.LEFT_WING,  "side": "bottom_right",  "x_min":  75, "x_max": 155, "y_min": 230, "y_max": 255},
+    {"player": PlayerID.LEFT_WING,  "side": "bottom_right",  "x_min":  45, "x_max": 155, "y_min": 230, "y_max": 255},
     {"player": PlayerID.LEFT_WING,  "side": "bottom_right",  "x_min":  45, "x_max": 75, "y_min": 110, "y_max": 230},
-    {"player": PlayerID.LEFT_WING,  "side": "bottom_left",  "x_min":  75, "x_max": 155, "y_min": 255, "y_max": 280},
-    {"player": PlayerID.LEFT_WING,  "side": "bottom_right",  "x_min":  0, "x_max": 45, "y_min": 110, "y_max": 280},
+    {"player": PlayerID.LEFT_WING,  "side": "bottom_left",  "x_min":  45, "x_max": 155, "y_min": 255, "y_max": 280},
+    {"player": PlayerID.LEFT_WING,  "side": "bottom_left",  "x_min":  0, "x_max": 45, "y_min": 110, "y_max": 280},
     # LEFT_WING — normal play (near left goal; tune x bounds to match physical reach)
     {"player": PlayerID.LEFT_WING,  "side": "right",        "x_min": 120, "x_max": 210, "y_min": 230, "y_max": 255},
     {"player": PlayerID.LEFT_WING,  "side": "left",         "x_min": 120, "x_max": 210, "y_min": 255, "y_max": 280},
     # RIGHT_WING — normal play
-    {"player": PlayerID.RIGHT_WING, "side": "left",         "x_min": 155, "x_max": 315, "y_min": 25, "y_max": 75},
-    {"player": PlayerID.RIGHT_WING, "side": "right",        "x_min": 155, "x_max": 315, "y_min": 0, "y_max": 25},
+    {"player": PlayerID.RIGHT_WING, "side": "left",         "x_min": 155, "x_max": 320, "y_min": 25, "y_max": 75},
+    {"player": PlayerID.RIGHT_WING, "side": "right",        "x_min": 155, "x_max": 320, "y_min": 0, "y_max": 25},
     # RIGHT_WING — bottom
     {"player": PlayerID.RIGHT_WING, "side": "bottom_left",  "x_min": 0, "x_max": 155, "y_min": 25, "y_max": 75},
     {"player": PlayerID.RIGHT_WING, "side": "bottom_right", "x_min": 0, "x_max": 155, "y_min": 0, "y_max": 25},
     # RIGHT_D
-    {"player": PlayerID.RIGHT_D,    "side": "right",        "x_min": 335, "x_max": 470, "y_min": 65, "y_max": 90},
-    {"player": PlayerID.RIGHT_D,    "side": "left",         "x_min": 335, "x_max": 470, "y_min": 90, "y_max": 115},
+    {"player": PlayerID.RIGHT_D,    "side": "right",        "x_min": 320, "x_max": 485, "y_min": 65, "y_max": 90},
+    {"player": PlayerID.RIGHT_D,    "side": "left",         "x_min": 320, "x_max": 485, "y_min": 90, "y_max": 115},
     # CENTER
-    {"player": PlayerID.CENTER,     "side": "right",        "x_min": 150, "x_max": 300, "y_min":  85, "y_max": 135},
-    {"player": PlayerID.CENTER,     "side": "left",         "x_min": 150, "x_max": 300, "y_min": 135, "y_max": 185},
+    {"player": PlayerID.CENTER,     "side": "right",        "x_min": 130, "x_max": 320, "y_min":  85, "y_max": 135},
+    {"player": PlayerID.CENTER,     "side": "left",         "x_min": 130, "x_max": 320, "y_min": 135, "y_max": 165},
     # LEFT_D
-    {"player": PlayerID.LEFT_D,     "side": "right",        "x_min": 278.5, "x_max": 485.5, "y_min":   185, "y_max": 210},
-    {"player": PlayerID.LEFT_D,     "side": "left",         "x_min": 278.5, "x_max": 485.5, "y_min":   210, "y_max": 235},
+    {"player": PlayerID.LEFT_D,     "side": "right",        "x_min": 278.5, "x_max": 530, "y_min":   185, "y_max": 210},
+    {"player": PlayerID.LEFT_D,     "side": "left",         "x_min": 278.5, "x_max": 530, "y_min":   210, "y_max": 235},
 ]
 
 
@@ -60,18 +60,34 @@ _ZONES = [
 # X-axis: right (puck_x < center_x, closer to 0) vs left (puck_x >= center_x).
 
 CENTER_LEFT = [
-    {"t": 0.85, "r": 100},  # TODO: calibrate -- center, puck on left
+    {"t": 0.95, "r": 100},  # TODO: calibrate -- center, puck on left
     {"r": 300, "rpm": 400, "direction": "ccw"},
 ]
 
+CENTER_MIDDLE_LEFT = [
+    {"t": 0.95, "r": 100},
+    {"r": 220, "rpm": 20, "direction": "ccw"},
+    {"r": 0, "rpm": 250, "direction": "cw"},
+    {"r": 90, "rpm": 1000, "direction": "cw"},
+]
+
+CENTER_MIDDLE_RIGHT = [
+    {"t": 0.95, "r": 280},
+    {"r": 160, "rpm": 20, "direction": "cw"},
+    {"r": 0, "rpm": 250, "direction": "ccw"},
+    {"r": 270, "rpm": 1000, "direction": "ccw"},
+]
+
 CENTER_RIGHT = [
-    {"t": 0.85, "r": 280},  # TODO: calibrate -- center, puck on right
+    {"t": 0.95, "r": 270},  # TODO: calibrate -- center, puck on right
     {"r": 60, "rpm": 400, "direction": "cw"},
 ]
 
 _CENTER_PLAYBOOK = {
-    "left":  CENTER_LEFT,
-    "right": CENTER_RIGHT,
+    "left":         CENTER_LEFT,
+    "middle_left":  CENTER_MIDDLE_LEFT,
+    "middle_right": CENTER_MIDDLE_RIGHT,
+    "right":        CENTER_RIGHT,
 }
 
 
@@ -82,29 +98,29 @@ _CENTER_PLAYBOOK = {
 
 # Position sequences -- move puck to sweet spot
 RIGHT_WING_LEFT = [
-    {"t": 0.5, "r": 115},  # TODO: calibrate -- right wing position, puck on left
-    {"t": 0.475, "r": 180, "direction": "ccw"},
+    {"t": 0.5, "r": 115, "speed_mm_per_sec": 10000},  # TODO: calibrate -- right wing position, puck on left
+    {"t": 0.475, "r": 180, "direction": "ccw", "speed_mm_per_sec": 10000},
     {"r": 0, "rpm": 150},
 ]
 
 RIGHT_WING_RIGHT = [
-    {"t": 0.5, "r": 265},  # TODO: calibrate -- right wing position, puck on right
+    {"t": 0.5, "r": 265, "speed_mm_per_sec": 10000},  # TODO: calibrate -- right wing position, puck on right
     {"r": 60, "rpm": 300, "direction": "ccw"},
 ]
 
 RIGHT_WING_BOTTOM_LEFT = [
-    {"t": 0.95, "r": 0.0},  # TODO: calibrate -- right wing position, puck bottom-left
-    { "r": 80, "direction": "ccw"},
-    {"t": 0.5},
-    {"t": 0.525, "r": 270, "direction": "cw"},
-    {"t": 0.5, "r": 180, "rpm": 400, "direction": "cw"},
+    {"t": 1, "r": 0.0, "speed_mm_per_sec": 10000},  # TODO: calibrate -- right wing position, puck bottom-left
+    {"r": 80, "direction": "ccw"},
+    {"t": 0.5, "speed_mm_per_sec": 10000},
+    {"t": 0.525, "r": 270, "direction": "cw", "speed_mm_per_sec": 10000},
+    {"t": 0.5, "r": 180, "rpm": 400, "direction": "cw", "speed_mm_per_sec": 10000},
 ]
 
 RIGHT_WING_BOTTOM_RIGHT = [
-    {"t": 0.95, "r": 0.0},  # TODO: calibrate -- right wing position, puck bottom-right
+    {"t": 1, "r": 0.0, "speed_mm_per_sec": 10000},  # TODO: calibrate -- right wing position, puck bottom-right
     {"r": 295, "direction": "cw"},
-    {"t": 0.50},
-    {"r": 60, "rpm": 250},
+    {"t": 0.50, "speed_mm_per_sec": 10000},
+    {"r": 60, "rpm": 260},
 ]
 
 # Action sequences -- execute the play
@@ -148,16 +164,12 @@ def get_rw_sequence(side: str, action: str) -> list:
 
 RIGHT_D_LEFT = [
     {"t": 0.95, "r": 100},  # TODO: calibrate -- right D, puck on right
-    {"r": 300, "direction": "cw", "rpm": 220 },
+    {"r": 300, "direction": "cw", "rpm": 220},
 ]
 
 RIGHT_D_RIGHT = [
-
-
-
-        {"t": 0.95, "r": 260},  # TODO: calibrate -- right D, puck on left
-    {"r": 60, "direction": "ccw", "rpm": 150 },
-    
+    {"t": 1, "r": 260},  # TODO: calibrate -- right D, puck on left
+    {"r": 60, "direction": "ccw", "rpm": 200},
 ]
 
 _RIGHT_D_PLAYBOOK = {
@@ -170,12 +182,12 @@ _RIGHT_D_PLAYBOOK = {
 
 LEFT_D_LEFT = [
     {"t": 0.8, "r": 115},  # TODO: calibrate -- left D, puck on left (pass to center)
-    {"r": 300, "direction": "cw", "rpm": 220 },
+    {"r": 300, "direction": "cw", "rpm": 220},
 ]
 
 LEFT_D_RIGHT = [
     {"t": 0.8, "r": 255, "direction": "ccw"},  # TODO: calibrate -- left D, puck on right (pass to center)
-    {"r": 60, "direction": "ccw", "rpm": 220 },
+    {"r": 60, "direction": "ccw", "rpm": 220},
 ]
 
 _LEFT_D_PLAYBOOK = {
@@ -189,28 +201,28 @@ _LEFT_D_PLAYBOOK = {
 # Zones are 2D (x + y), but playbook uses simple left/right for now.
 
 LEFT_WING_LEFT = [
-    {"t": 0.2, "r": 120},  # TODO: calibrate -- left wing, puck on left
+    {"t": 0.2, "r": 120, "speed_mm_per_sec": 10000},  # TODO: calibrate -- left wing, puck on left
     {"r": 300, "rpm": 400, "direction": "cw"},
 ]
 
 LEFT_WING_RIGHT = [  # TODO: calibrate -- left wing, puck on right
-    {"t": 0.35, "r": 270},
-    {"t": 0.325, "r": 90, "direction": "cw"},
+    {"t": 0.35, "r": 270, "speed_mm_per_sec": 10000},
+    {"t": 0.325, "r": 90, "direction": "cw", "speed_mm_per_sec": 10000},
     {"r": 300, "rpm": 500, "direction": "cw"},
 ]
 
 LEFT_WING_BOTTOM_LEFT = [
-    {"t": 0.5, "r": 110},  # TODO: calibrate -- left wing, puck bottom-left
-    {"t": 0.75, "r": 150},
-    {"t": 1, "r": 120, "direction": "ccw"},
+    {"t": 0.5, "r": 110, "speed_mm_per_sec": 10000},  # TODO: calibrate -- left wing, puck bottom-left
+    {"t": 0.75, "r": 150, "speed_mm_per_sec": 10000},
+    {"t": 1, "r": 120, "direction": "ccw", "speed_mm_per_sec": 10000},
     {"r": 100, "direction": "ccw"},
     {"r": 300, "rpm": 200, "direction": "cw"},
 ]
 
 LEFT_WING_BOTTOM_RIGHT = [
-    {"t": 0.5, "r": 260},  # TODO: calibrate -- left wing, puck bottom-right
-     {"t": 1, "r": 320, "direction": "cw"},
-     {"r": 100, "rpm": 300, "direction": "ccw"},
+    {"t": 0.5, "r": 270, "speed_mm_per_sec": 10000},  # TODO: calibrate -- left wing, puck bottom-right
+    {"t": 1, "r": 320, "direction": "cw", "speed_mm_per_sec": 10000},
+    {"r": 100, "rpm": 300, "direction": "ccw"},
 ]
 
 _LEFT_WING_PLAYBOOK = {
@@ -273,6 +285,26 @@ def _center_line_y(puck_x: float) -> float:
     return _CENTER_Y1 + slope * (puck_x - _CENTER_X1)
 
 
+# Four measured points along the left wing's curved rod section.
+_LW_CURVE_POINTS = [(20.5, 118.0), (21.5, 204.5), (34.5, 238.0), (81.5, 256.5)]
+
+
+def _left_wing_curve_y(puck_x: float) -> float:
+    """Y midpoint of the left wing rod at a given camera x (piecewise linear)."""
+    pts = _LW_CURVE_POINTS
+    if puck_x <= pts[0][0]:
+        return pts[0][1]
+    if puck_x >= pts[-1][0]:
+        return pts[-1][1]
+    for i in range(len(pts) - 1):
+        x0, y0 = pts[i]
+        x1, y1 = pts[i + 1]
+        if x0 <= puck_x <= x1:
+            t = (puck_x - x0) / (x1 - x0)
+            return y0 + t * (y1 - y0)
+    return pts[-1][1]
+
+
 _PLAYBOOK_MAP = {
     PlayerID.CENTER:    _CENTER_PLAYBOOK,
     PlayerID.RIGHT_D:   _RIGHT_D_PLAYBOOK,
@@ -296,7 +328,18 @@ def select_playbook(puck_x: float, puck_y: float):
     player_id = zone["player"]
     side = zone["side"]
     if player_id == PlayerID.CENTER:
-        side = "right" if puck_y < _center_line_y(puck_x) else "left"
+        mid = _center_line_y(puck_x)
+        if puck_y < mid - 15:
+            side = "right"
+        elif puck_y < mid - 3:
+            side = "middle_right"
+        elif puck_y < mid + 10:
+            side = "middle_left"
+        else:
+            side = "left"
+    if player_id == PlayerID.LEFT_WING and side in ("bottom_left", "bottom_right"):
+        curve_y = _left_wing_curve_y(puck_x)
+        side = "bottom_right" if puck_y < curve_y else "bottom_left"
     print(f"{player_id.name} side: {side}  (puck_x={puck_x:.0f}, puck_y={puck_y:.0f})")
     if player_id == PlayerID.RIGHT_WING:
         return player_id, get_rw_sequence(side, "shot")

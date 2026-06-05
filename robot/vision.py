@@ -21,6 +21,26 @@ from engine.constants import WIDTH, HEIGHT
 _CORNER_CLASS = "lime-green"
 _PUCK_CLASS   = "orange"
 
+_machine = None
+
+
+async def _get_machine():
+    global _machine
+    if _machine is None:
+        opts = RobotClient.Options.with_api_key(api_key=ROBOT_API_KEY, api_key_id=ROBOT_API_KEY_ID)
+        _machine = await RobotClient.at_address(ROBOT_ADDRESS, opts)
+    return _machine
+
+
+async def _reset_machine():
+    global _machine
+    if _machine is not None:
+        try:
+            await _machine.close()
+        except Exception:
+            pass
+        _machine = None
+
 
 def get_center(bbox):
     """Return the (x, y) center of a bounding box."""
@@ -62,21 +82,15 @@ def scale_puck_coords(camera_x, camera_y, cam_x_min=CAMERA_X_MIN, cam_x_max=CAME
     return game_x, game_y
 
 
-async def _connect():
-    opts = RobotClient.Options.with_api_key(api_key=ROBOT_API_KEY, api_key_id=ROBOT_API_KEY_ID)
-    return await RobotClient.at_address(ROBOT_ADDRESS, opts)
-
-
 async def get_puck_camera_coordinates():
-    """Connect to the robot, detect the puck, and return its raw camera (x, y).
+    """Detect the puck and return its raw camera (x, y).
 
-    Returns the averaged center of all puck detections in camera pixel space,
-    or (None, None) if no puck is detected.
+    Reuses a persistent robot connection; reconnects automatically on error.
+    Returns the averaged center of all puck detections, or (None, None).
     """
-    machine = await _connect()
     try:
+        machine = await _get_machine()
         vision1 = VisionClient.from_robot(machine, "vision-1")
-
         puck_detections = await vision1.get_detections_from_camera("dynamic-crop")
 
         pink = [d for d in puck_detections if d.class_name == _PUCK_CLASS]
@@ -88,9 +102,9 @@ async def get_puck_camera_coordinates():
         camera_y = sum(c[1] for c in centers) / len(centers)
         print(f"Camera puck: x={camera_x:.1f}, y={camera_y:.1f}")
         return camera_x, camera_y
-
-    finally:
-        await machine.close()
+    except Exception:
+        await _reset_machine()
+        raise
 
 
 def _field_bounds_from_corners(detections):
@@ -108,7 +122,7 @@ def _field_bounds_from_corners(detections):
 
 # --- Standalone test ---
 async def _main():
-    machine = await _connect()
+    machine = await _get_machine()
     try:
         vision1 = VisionClient.from_robot(machine, "vision-1")
         vision2 = VisionClient.from_robot(machine, "vision-2")
@@ -147,13 +161,12 @@ async def _main():
         print(f"Camera puck ({len(pink)} detections):  x={camera_x:.1f}, y={camera_y:.1f}")
 
         # Map to full game coordinates using field bounds
-        # Camera is landscape: camera x → game y (long axis), camera y → game x (short axis)
         game_x = (cam_y_max - camera_y) / (cam_y_max - cam_y_min) * WIDTH
         game_y = (camera_x - cam_x_min) / (cam_x_max - cam_x_min) * HEIGHT
         print(f"Game coordinates: x={game_x:.1f}, y={game_y:.1f}")
 
     finally:
-        await machine.close()
+        await _reset_machine()
 
 if __name__ == '__main__':
     asyncio.run(_main())

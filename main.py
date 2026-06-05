@@ -104,9 +104,8 @@ async def execute_with_coordination(player, sequence):
     if player == PlayerID.LEFT_D and sequence is _LEFT_D_PLAYBOOK["right"]:
         await asyncio.gather(
             execute_sequence(sequence, player),
-            execute_sequence([{"t": 0.4}], PlayerID.LEFT_WING),
+            execute_sequence([{"t": 0.25}], PlayerID.LEFT_WING, post_delay=3),
         )
-        await execute_sequence([{"t": 0}], PlayerID.LEFT_WING)
     else:
         await execute_sequence(sequence, player)
 
@@ -117,10 +116,21 @@ async def run_loop(poll_interval=0.25, stability_threshold=15, stability_delay=0
     Takes two readings separated by stability_delay seconds. Only fires if the
     puck hasn't moved more than stability_threshold pixels between them, so
     playbooks don't trigger while the puck is in motion.
+
+    Multiple players can run in parallel. If the detected player already has a
+    playbook running, that trigger is skipped until the player is free.
     """
     _VISION_TIMEOUT  = 15.0
     _EXECUTE_TIMEOUT = 30.0
-    _ERROR_SLEEP     = 5.0
+    _ERROR_SLEEP     = 1.0
+
+    player_tasks: dict = {}
+
+    async def _fire(player, sequence):
+        try:
+            await asyncio.wait_for(execute_with_coordination(player, sequence), timeout=_EXECUTE_TIMEOUT)
+        except Exception as e:
+            print(f"{player.name} playbook error: {e}")
 
     print(f"Loop mode — polling every {poll_interval}s. Press Ctrl+C to stop.")
     while True:
@@ -152,13 +162,14 @@ async def run_loop(poll_interval=0.25, stability_threshold=15, stability_delay=0
             if not sequence:
                 print("No playbook for this position.")
             else:
-                await asyncio.wait_for(
-                    execute_with_coordination(player, sequence),
-                    timeout=_EXECUTE_TIMEOUT,
-                )
+                task = player_tasks.get(player)
+                if task and not task.done():
+                    print(f"{player.name} busy — skipping.")
+                else:
+                    player_tasks[player] = asyncio.create_task(_fire(player, sequence))
 
             await asyncio.sleep(poll_interval)
-        except (Exception, KeyboardInterrupt) as e:
+        except BaseException as e:
             print(f"Error: {e} — retrying in {_ERROR_SLEEP:.0f}s.")
             await asyncio.sleep(_ERROR_SLEEP)
 
