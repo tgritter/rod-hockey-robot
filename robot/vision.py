@@ -27,6 +27,20 @@ def get_center(bbox):
     return ((bbox.x_min + bbox.x_max) / 2, (bbox.y_min + bbox.y_max) / 2)
 
 
+def puck_uv_from_detections(detections):
+    """Average the normalized centers of all orange (puck) detections.
+
+    Returns (u, v) in [0, 1], or (None, None) if no puck detected. Uses Viam's
+    server-computed *_normalized bbox fields, so no image size is needed.
+    """
+    pucks = [d for d in detections if d.class_name == _PUCK_CLASS]
+    if not pucks:
+        return None, None
+    us = [(d.x_min_normalized + d.x_max_normalized) / 2 for d in pucks]
+    vs = [(d.y_min_normalized + d.y_max_normalized) / 2 for d in pucks]
+    return sum(us) / len(us), sum(vs) / len(vs)
+
+
 def group_by_y(detections, threshold=30):
     """Group bounding boxes by y-center proximity.
 
@@ -89,6 +103,23 @@ async def get_puck_camera_coordinates():
         print(f"Camera puck: x={camera_x:.1f}, y={camera_y:.1f}")
         return camera_x, camera_y
 
+    finally:
+        await machine.close()
+
+
+async def get_puck_field_coordinates():
+    """Connect, detect the puck, and return its normalized (u, v) field position.
+
+    Returns (u, v) in [0, 1], or (None, None) if no puck is detected.
+    """
+    machine = await _connect()
+    try:
+        vision1 = VisionClient.from_robot(machine, "vision-1")
+        detections = await vision1.get_detections_from_camera("dynamic-crop")
+        u, v = puck_uv_from_detections(detections)
+        if u is not None:
+            print(f"Puck field coords: u={u:.3f}, v={v:.3f}")
+        return u, v
     finally:
         await machine.close()
 
