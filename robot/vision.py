@@ -1,9 +1,10 @@
 """
-Vision module — detects the puck from the robot's camera and returns
-its position in game pixel coordinates.
+Vision module — detects the puck from the robot's camera.
 
-Connects to the Viam robot, reads detections from the vision service,
-and maps the camera-space bounding box center to the game's coordinate system.
+The loop path (`get_puck_field_coordinates`) returns the puck's position in
+normalized field coordinates (u, v) in [0, 1], read from the detections'
+server-computed normalized bbox fields. The legacy `get_puck_camera_coordinates`
+returns raw camera pixel coordinates and is retained for debugging.
 """
 
 import asyncio

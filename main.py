@@ -140,7 +140,7 @@ async def run_loop(poll_interval=0.25, stability_threshold=0.03, stability_delay
 
             dist = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
             if dist > stability_threshold:
-                print(f"Puck moving ({dist:.1f}px delta) — skipping.")
+                print(f"Puck moving ({dist:.3f} delta) — skipping.")
                 await asyncio.sleep(poll_interval)
                 continue
 
