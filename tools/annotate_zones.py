@@ -110,7 +110,6 @@ def grab_live_crop():
 
 def _make_handler(image_path, out_path, width, height, scale):
     legacy = _legacy_boxes_px(width, height)
-    existing = _existing_zones_px(out_path, width, height)
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):  # quiet
@@ -141,9 +140,12 @@ def _make_handler(image_path, out_path, width, height, scale):
                 except Exception as e:
                     self._send(500, f"{type(e).__name__}: {e}", "text/plain")
             elif path == "/data":
+                # Re-read zones.json per request so a Save + reload shows the
+                # current file, not a snapshot cached at server startup.
                 self._send(200, json.dumps({
                     "width": width, "height": height,
-                    "legacy": legacy, "zones": existing,
+                    "legacy": legacy,
+                    "zones": _existing_zones_px(out_path, width, height),
                 }))
             else:
                 self._send(404, json.dumps({"error": "not found"}))
