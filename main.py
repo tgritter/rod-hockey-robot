@@ -32,7 +32,7 @@ import asyncio
 import argparse
 
 from robot.vision import get_puck_field_coordinates
-from robot.playbook import get_rw_sequence, select_playbook, _CENTER_PLAYBOOK, _RIGHT_D_PLAYBOOK, _LEFT_D_PLAYBOOK, _LEFT_WING_PLAYBOOK
+from robot.playbook import find_action, get_sequence, select_playbook, _CENTER_PLAYBOOK, _RIGHT_WING_PLAYBOOK, _RIGHT_D_PLAYBOOK, _LEFT_D_PLAYBOOK, _LEFT_WING_PLAYBOOK
 from robot.execution import execute_sequence
 from engine.constants import PlayerID
 
@@ -70,13 +70,6 @@ def _rw_side(args) -> str:
     return "left"
 
 
-def _rw_action(args, base: str) -> str:
-    """Return the action key, using bottom variant when a bottom side is selected."""
-    if args.bottom_left or args.bottom_right:
-        return f"bottom_{base}"
-    return base
-
-
 async def get_puck_coordinates():
     """Return normalized (u, v) from vision, or (None, None) if no puck detected."""
     return await get_puck_field_coordinates()
@@ -90,25 +83,25 @@ async def run_playbook_from_puck_position():
         return False
     print(f"Puck detected at: u={puck_x:.3f}, v={puck_y:.3f}")
 
-    player, sequence = select_playbook(puck_x, puck_y)
-    if not sequence:
+    player, play = select_playbook(puck_x, puck_y)
+    if not play:
         print("No playbook for this position.")
         return False
 
-    await execute_with_coordination(player, sequence)
+    await execute_with_coordination(player, play)
     return True
 
 
-async def execute_with_coordination(player, sequence):
-    """Execute a playbook sequence, with any multi-player coordination."""
-    if player == PlayerID.LEFT_D and sequence is _LEFT_D_PLAYBOOK["right"]:
+async def execute_with_coordination(player, play):
+    """Execute a play, with any multi-player coordination based on the pass target."""
+    action = find_action(play)
+    sequence = get_sequence(play)
+    if player == PlayerID.LEFT_D and action["target"] == PlayerID.LEFT_WING:
         await asyncio.gather(
             execute_sequence(sequence, player),
             execute_sequence([{"t": 0.25}], PlayerID.LEFT_WING, post_delay=3),
         )
-    elif player == PlayerID.LEFT_WING and sequence in (
-        _LEFT_WING_PLAYBOOK["bottom_left"], _LEFT_WING_PLAYBOOK["bottom_right"]
-    ):
+    elif player == PlayerID.LEFT_WING and action["target"] == PlayerID.RIGHT_WING:
         await asyncio.gather(
             execute_sequence(sequence, player),
             execute_sequence([{"t": 0.75}], PlayerID.RIGHT_WING, skip_reset=True),
@@ -192,22 +185,22 @@ async def run_loop(poll_interval=0.25, stability_threshold=0.03, stability_delay
 async def run_once(args):
     """Run one vision → plan → execute cycle. Returns True if an action was taken."""
     # Manual override — skip vision, infer player from flag
-    sequence = None
+    play = None
     player = None
-    if args.center_left:  player = PlayerID.CENTER;     sequence = _CENTER_PLAYBOOK["left"]
-    if args.center_right: player = PlayerID.CENTER;     sequence = _CENTER_PLAYBOOK["right"]
-    if args.rw_shot: player = PlayerID.RIGHT_WING; sequence = get_rw_sequence(_rw_side(args), _rw_action(args, "shot"))
-    if args.rw_pass: player = PlayerID.RIGHT_WING; sequence = get_rw_sequence(_rw_side(args), _rw_action(args, "pass"))
-    if args.rd_left:  player = PlayerID.RIGHT_D; sequence = _RIGHT_D_PLAYBOOK["left"]
-    if args.rd_right: player = PlayerID.RIGHT_D; sequence = _RIGHT_D_PLAYBOOK["right"]
-    if args.ld_left:  player = PlayerID.LEFT_D;  sequence = _LEFT_D_PLAYBOOK["left"]
-    if args.ld_right: player = PlayerID.LEFT_D;  sequence = _LEFT_D_PLAYBOOK["right"]
-    if args.lw_left:  player = PlayerID.LEFT_WING; sequence = _LEFT_WING_PLAYBOOK["left"]
-    if args.lw_right: player = PlayerID.LEFT_WING; sequence = _LEFT_WING_PLAYBOOK["right"]
+    if args.center_left:  player = PlayerID.CENTER;     play = _CENTER_PLAYBOOK["left"]
+    if args.center_right: player = PlayerID.CENTER;     play = _CENTER_PLAYBOOK["right"]
+    if args.rw_shot: player = PlayerID.RIGHT_WING; play = _RIGHT_WING_PLAYBOOK[_rw_side(args)]
+    if args.rw_pass: player = PlayerID.RIGHT_WING; play = _RIGHT_WING_PLAYBOOK[_rw_side(args)]
+    if args.rd_left:  player = PlayerID.RIGHT_D; play = _RIGHT_D_PLAYBOOK["left"]
+    if args.rd_right: player = PlayerID.RIGHT_D; play = _RIGHT_D_PLAYBOOK["right"]
+    if args.ld_left:  player = PlayerID.LEFT_D;  play = _LEFT_D_PLAYBOOK["left"]
+    if args.ld_right: player = PlayerID.LEFT_D;  play = _LEFT_D_PLAYBOOK["right"]
+    if args.lw_left:  player = PlayerID.LEFT_WING; play = _LEFT_WING_PLAYBOOK["left"]
+    if args.lw_right: player = PlayerID.LEFT_WING; play = _LEFT_WING_PLAYBOOK["right"]
 
-    if sequence:
+    if play:
         print(f"Manual override: player={player.name}")
-        await execute_sequence(sequence, player)
+        await execute_sequence(get_sequence(play), player)
         return True
 
     return await run_playbook_from_puck_position()
