@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rod Hockey</title>
+  <style>
+    /* Dead-simple dark UI sized for a phone or a kiosk tablet. */
+    :root { color-scheme: dark; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #0f1115; color: #e8e8e8;
+           display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    header { width: 100%; padding: 16px 20px; box-sizing: border-box; display: flex;
+             justify-content: space-between; align-items: center; border-bottom: 1px solid #222; }
+    h1 { font-size: 20px; margin: 0; }
+    main { width: 100%; max-width: 460px; padding: 24px 20px; box-sizing: border-box;
+           display: flex; flex-direction: column; gap: 20px; }
+    .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .ok { background: #3fb950; } .bad { background: #f85149; } .wait { background: #d29922; }
+    .puck { font-size: 18px; text-align: center; padding: 14px; background: #161b22;
+            border: 1px solid #222; border-radius: 12px; }
+    button { font-size: 20px; font-weight: 600; padding: 22px; border-radius: 14px;
+             border: none; cursor: pointer; color: #fff; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .auto-off { background: #238636; } .auto-on { background: #b8860b; }
+    .home { background: #30363d; }
+    .status { text-align: center; min-height: 20px; color: #9aa4b2; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <!-- 1. Rod hockey status: title + live connection indicator -->
+  <header>
+    <h1>🏒 Rod Hockey</h1>
+    <span id="conn"><span class="dot wait"></span>Connecting…</span>
+  </header>
+
+  <main>
+    <!-- 2. Puck detection status (read-only, refreshed by polling) -->
+    <div class="puck" id="puck"><span class="dot wait"></span>Puck: —</div>
+
+    <!-- 3. Auto-play toggle -->
+    <button id="auto" class="auto-off" disabled>▶ AUTO-PLAY: OFF</button>
+
+    <!-- 4. Home all rods -->
+    <button id="home" class="home" disabled>⟲ HOME ALL RODS</button>
+
+    <div class="status" id="status"></div>
+  </main>
+
+  <script type="module">
+    // Viam TypeScript SDK, loaded straight from a CDN — no build step (BYO frontend).
+    import * as VIAM from 'https://esm.sh/@viamrobotics/sdk@0.40.0';
+    // Reads the host + api-key cookies Viam injects when a user logs in to the app.
+    import { getHostAndCredentials } from './auth.js';
+
+    // Name of the rod_hockey_game generic service as configured on the machine.
+    const SERVICE_NAME = 'rod-hockey-game';
+
+    // ── Skip the Viam login ──────────────────────────────────────────────────
+    // Fill these in to let anyone open the page and play without logging in to
+    // Viam. SECURITY: these are shipped in the page, so anyone who can reach the
+    // URL can read them and control the machine — use a tightly-scoped LOCATION
+    // api key, not your personal one. Leave blank to require the normal Viam login.
+    const EMBEDDED = {
+      host: '',       // e.g. 'rig1-2270-main.wpth7nhx2w.viam.cloud'
+      apiKeyId: '',   // location api key id
+      apiKey: '',     // location api key secret
+    };
+
+    // Grab the elements we update.
+    const connEl = document.getElementById('conn');
+    const puckEl = document.getElementById('puck');
+    const autoBtn = document.getElementById('auto');
+    const homeBtn = document.getElementById('home');
+    const statusEl = document.getElementById('status');
+
+    let service = null;     // the generic-service client once connected
+    let autoOn = false;     // last-known auto-play state, to flip on tap
+
+    // Connect to the machine using the logged-in user's credentials.
+    async function connect() {
+      // Use the embedded credentials if provided (no login), else the Viam
+      // login cookies.
+      const { host, credentials } = EMBEDDED.host && EMBEDDED.apiKey
+        ? { host: EMBEDDED.host,
+            credentials: { type: 'api-key', payload: EMBEDDED.apiKey, authEntity: EMBEDDED.apiKeyId } }
+        : getHostAndCredentials();
+      const client = await VIAM.createRobotClient({
+        host,
+        credentials,
+        signalingAddress: 'https://app.viam.com:443',
+      });
+      service = new VIAM.GenericServiceClient(client, SERVICE_NAME);
+      connEl.innerHTML = '<span class="dot ok"></span>Connected';
+      autoBtn.disabled = false;
+      homeBtn.disabled = false;
+    }
+
+    // Paint the auto-play button to match the current state.
+    function renderAuto() {
+      autoBtn.textContent = autoOn ? '⏸ AUTO-PLAY: ON' : '▶ AUTO-PLAY: OFF';
+      autoBtn.className = autoOn ? 'auto-on' : 'auto-off';
+    }
+
+    // Ask the robot for status once and update the puck line + auto state.
+    async function refreshStatus() {
+      if (!service) return;
+      try {
+        const s = await service.doCommand({ action: 'status' });
+        autoOn = !!s.auto_play;
+        renderAuto();
+        if (s.puck_detected) {
+          puckEl.innerHTML = `<span class="dot ok"></span>Puck: detected — ${s.puck_side} side`;
+        } else {
+          puckEl.innerHTML = '<span class="dot bad"></span>Puck: not detected';
+        }
+      } catch (e) {
+        // Lost the robot — show it in the header rather than crashing the page.
+        connEl.innerHTML = '<span class="dot bad"></span>Disconnected';
+      }
+    }
+
+    // Tap auto-play: tell the robot to start or stop the autonomous loop.
+    autoBtn.onclick = async () => {
+      autoBtn.disabled = true;
+      await service.doCommand({ action: 'auto_play', enabled: !autoOn });
+      await refreshStatus();
+      autoBtn.disabled = false;
+    };
+
+    // Tap home: drive every rod to its limit switch (run once after a restart).
+    homeBtn.onclick = async () => {
+      homeBtn.disabled = true;
+      statusEl.textContent = 'Homing all rods…';
+      const r = await service.doCommand({ action: 'home' });
+      statusEl.textContent = r.message || 'Home complete.';
+      homeBtn.disabled = false;
+    };
+
+    // Boot: connect, then poll status every second for the puck + auto-play state.
+    await connect();
+    await refreshStatus();
+    setInterval(refreshStatus, 1000);
+  </script>
+</body>
+</html>
