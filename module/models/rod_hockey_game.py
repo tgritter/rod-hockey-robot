@@ -1,3 +1,4 @@
+import asyncio
 from typing import ClassVar, Mapping, Optional, Sequence, Tuple
 
 from ..constants import PLAYERS
@@ -52,6 +53,11 @@ class RodHockeyGame(Generic, EasyResource):
         """
         return PLAYERS, []
 
+    # Background task running the autonomous play loop, or None when auto-play is off.
+    _auto_task = None
+    # Flag the loop checks each cycle; setting it False stops auto-play gracefully.
+    _auto_run = False
+
     async def do_command(
         self,
         command: Mapping[str, ValueTypes],
@@ -59,8 +65,45 @@ class RodHockeyGame(Generic, EasyResource):
         timeout: Optional[float] = None,
         **kwargs,
     ) -> Mapping[str, ValueTypes]:
-        self.logger.error("`do_command` is not implemented")
-        raise NotImplementedError()
+        # The web UI only ever sends one of three actions. Dispatch on it.
+        action = command.get("action")
+
+        # Home every rod (run once after a robot restart, before any play works).
+        if action == "home":
+            from home import _PLAYER_TO_GANTRY  # reuse the existing player->gantry map
+            from robot.execution import _get_robot
+            from viam.components.gantry import Gantry
+            robot = await _get_robot()
+            for name in _PLAYER_TO_GANTRY.values():
+                await Gantry.from_robot(robot, name).home()
+            return {"message": "All rods homed."}
+
+        # Report puck detection + which side it's on, plus current auto-play state.
+        if action == "status":
+            from robot.vision import get_puck_field_coordinates
+            u, _ = await get_puck_field_coordinates()
+            return {
+                "auto_play": self._auto_run,
+                "puck_detected": u is not None,
+                "puck_side": ("left" if u < 0.5 else "right") if u is not None else "",
+            }
+
+        # Start or stop the autonomous play loop (graceful stop via the flag).
+        if action == "auto_play":
+            if command.get("enabled"):
+                # Start the loop once; the flag keeps it alive until we clear it.
+                if self._auto_task is None or self._auto_task.done():
+                    self._auto_run = True
+                    from main import run_loop
+                    self._auto_task = asyncio.create_task(
+                        run_loop(should_continue=lambda: self._auto_run)
+                    )
+            else:
+                # Loop finishes its current play, then exits at the next cycle check.
+                self._auto_run = False
+            return {"auto_play": self._auto_run}
+
+        raise ValueError(f"unknown action: {action}")
 
     async def get_status(
         self, *, timeout: Optional[float] = None, **kwargs

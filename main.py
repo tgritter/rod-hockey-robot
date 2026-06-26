@@ -117,7 +117,7 @@ async def execute_with_coordination(player, sequence):
         await execute_sequence(sequence, player)
 
 
-async def run_loop(poll_interval=0.25, stability_threshold=0.03, stability_delay=0.15):
+async def run_loop(poll_interval=0.25, stability_threshold=0.03, stability_delay=0.15, should_continue=lambda: True):
     """Continuously poll the puck and run playbooks.
 
     Takes two readings separated by stability_delay seconds. Only fires if the
@@ -142,7 +142,9 @@ async def run_loop(poll_interval=0.25, stability_threshold=0.03, stability_delay
             print(f"{player.name} playbook error: {e}")
 
     print(f"Loop mode — polling every {poll_interval}s. Press Ctrl+C to stop.")
-    while True:
+    # Re-checked each cycle so the web UI can stop auto-play gracefully (current
+    # play finishes, then the loop exits) instead of cancelling mid-shot.
+    while should_continue():
         try:
             x1, y1 = await asyncio.wait_for(get_puck_coordinates(), timeout=_VISION_TIMEOUT)
             if x1 is None:

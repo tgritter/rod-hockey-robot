@@ -11,7 +11,13 @@
       "markdown_link": "viam-rod-hockey_rod-hockey-game_rod_hockey_game.md"
     }
   ],
-  "applications": null,
+  "applications": [
+    {
+      "name": "rod-hockey-operator",
+      "type": "single_machine",
+      "entrypoint": "app/dist/index.html"
+    }
+  ],
   "markdown_link": "README_MODULE.md",
   "entrypoint": "dist/module",
   "first_run": "",
