@@ -3,10 +3,12 @@ Main entry point for the bubble hockey robot.
 
 Pipeline:
   1. Vision   — detect puck position from camera
-  2. Playbook — look up calibrated instruction sequence
-  3. Execution — send motor commands to the robot
+  2. Playbook — look up calibrated play for puck position
+  3. RL agent — select action variant via UCB bandit
+  4. Execution — send motor commands to the robot
+  5. Reward   — observe outcome and update Q-table
 
-Manual override (skips vision — useful for calibration):
+Manual override (skips vision and RL — useful for calibration):
   python main.py --center-left
   python main.py --center-right
   python main.py --rw-shot --left
@@ -24,7 +26,7 @@ Manual override (skips vision — useful for calibration):
   python main.py --lw-left
   python main.py --lw-right
 
-Loop mode (polls vision every 2 seconds):
+Loop mode (polls vision, uses RL to select actions):
   python main.py --loop
 """
 
@@ -32,15 +34,18 @@ import asyncio
 import argparse
 
 from robot.vision import get_puck_field_coordinates
-from robot.playbook import get_rw_sequence, select_playbook, _CENTER_PLAYBOOK, _RIGHT_D_PLAYBOOK, _LEFT_D_PLAYBOOK, _LEFT_WING_PLAYBOOK
+from robot.playbook import get_sequence, select_playbook, _CENTER_PLAYBOOK, _RIGHT_WING_PLAYBOOK, _RIGHT_D_PLAYBOOK, _LEFT_D_PLAYBOOK, _LEFT_WING_PLAYBOOK
 from robot.execution import execute_sequence
+from robot.reward import observe_reward
+from robot import rl_agent
 from engine.constants import PlayerID
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Bubble hockey robot")
 
-    parser.add_argument("--loop", action="store_true", help="Poll vision every 2 seconds and act when puck is detected")
+    parser.add_argument("--loop", action="store_true", help="Poll vision and use RL to select actions")
+    parser.add_argument("--play", action="store_true", help="Play mode: always use best known action, no exploration")
 
     side_group = parser.add_mutually_exclusive_group()
     side_group.add_argument("--left",         action="store_true")
@@ -70,45 +75,20 @@ def _rw_side(args) -> str:
     return "left"
 
 
-def _rw_action(args, base: str) -> str:
-    """Return the action key, using bottom variant when a bottom side is selected."""
-    if args.bottom_left or args.bottom_right:
-        return f"bottom_{base}"
-    return base
-
-
 async def get_puck_coordinates():
     """Return normalized (u, v) from vision, or (None, None) if no puck detected."""
     return await get_puck_field_coordinates()
 
 
-async def run_playbook_from_puck_position():
-    """Detect puck, select playbook, and execute. Returns True if an action was taken."""
-    puck_x, puck_y = await get_puck_coordinates()
-    if puck_x is None:
-        print("No puck detected.")
-        return False
-    print(f"Puck detected at: u={puck_x:.3f}, v={puck_y:.3f}")
-
-    player, sequence = select_playbook(puck_x, puck_y)
-    if not sequence:
-        print("No playbook for this position.")
-        return False
-
-    await execute_with_coordination(player, sequence)
-    return True
-
-
-async def execute_with_coordination(player, sequence):
-    """Execute a playbook sequence, with any multi-player coordination."""
-    if player == PlayerID.LEFT_D and sequence is _LEFT_D_PLAYBOOK["right"]:
+async def execute_with_coordination(player, play, action):
+    """Execute a play with the given action, coordinating other players as needed."""
+    sequence = play["puck_handling"] + action["steps"]
+    if player == PlayerID.LEFT_D and action["target"] == PlayerID.LEFT_WING:
         await asyncio.gather(
             execute_sequence(sequence, player),
             execute_sequence([{"t": 0.25}], PlayerID.LEFT_WING, post_delay=3),
         )
-    elif player == PlayerID.LEFT_WING and sequence in (
-        _LEFT_WING_PLAYBOOK["bottom_left"], _LEFT_WING_PLAYBOOK["bottom_right"]
-    ):
+    elif player == PlayerID.LEFT_WING and action["target"] == PlayerID.RIGHT_WING:
         await asyncio.gather(
             execute_sequence(sequence, player),
             execute_sequence([{"t": 0.75}], PlayerID.RIGHT_WING, skip_reset=True),
@@ -117,8 +97,28 @@ async def execute_with_coordination(player, sequence):
         await execute_sequence(sequence, player)
 
 
+async def run_playbook_from_puck_position():
+    """Detect puck, select playbook, use RL to pick action, execute, observe reward."""
+    puck_x, puck_y = await get_puck_coordinates()
+    if puck_x is None:
+        print("No puck detected.")
+        return False
+    print(f"Puck detected at: u={puck_x:.3f}, v={puck_y:.3f}")
+
+    player, side, play = select_playbook(puck_x, puck_y)
+    if not play:
+        print("No playbook for this position.")
+        return False
+
+    action = rl_agent.select_action(play, player, side)
+    await execute_with_coordination(player, play, action)
+    reward = await observe_reward(action)
+    rl_agent.update(player, side, action["name"], reward)
+    return True
+
+
 async def run_loop(poll_interval=0.25, stability_threshold=0.03, stability_delay=0.15):
-    """Continuously poll the puck and run playbooks.
+    """Continuously poll the puck and run playbooks with RL action selection.
 
     Takes two readings separated by stability_delay seconds. Only fires if the
     puck hasn't moved more than stability_threshold (normalized, ~0.03 ≈ 16px on a
@@ -135,9 +135,15 @@ async def run_loop(poll_interval=0.25, stability_threshold=0.03, stability_delay
 
     player_tasks: dict = {}
 
-    async def _fire(player, sequence):
+    async def _fire(player, side, play):
         try:
-            await asyncio.wait_for(execute_with_coordination(player, sequence), timeout=_EXECUTE_TIMEOUT)
+            action = rl_agent.select_action(play, player, side)
+            await asyncio.wait_for(
+                execute_with_coordination(player, play, action),
+                timeout=_EXECUTE_TIMEOUT,
+            )
+            reward = await observe_reward(action)
+            rl_agent.update(player, side, action["name"], reward)
         except Exception as e:
             print(f"{player.name} playbook error: {e}")
 
@@ -167,21 +173,21 @@ async def run_loop(poll_interval=0.25, stability_threshold=0.03, stability_delay
             puck_y = (y1 + y2) / 2
             print(f"Puck stable at: u={puck_x:.3f}, v={puck_y:.3f}")
 
-            player, sequence = select_playbook(puck_x, puck_y)
-            if not sequence:
+            player, side, play = select_playbook(puck_x, puck_y)
+            if not play:
                 print("No playbook for this position.")
             elif player in _FORWARDS:
                 task = player_tasks.get(player)
                 if task and not task.done():
                     print(f"{player.name} busy — skipping.")
                 else:
-                    player_tasks[player] = asyncio.create_task(_fire(player, sequence))
+                    player_tasks[player] = asyncio.create_task(_fire(player, side, play))
             else:  # defense
                 task = player_tasks.get(player)
                 if task and not task.done():
                     print(f"{player.name} busy — skipping.")
                 else:
-                    player_tasks[player] = asyncio.create_task(_fire(player, sequence))
+                    player_tasks[player] = asyncio.create_task(_fire(player, side, play))
 
             await asyncio.sleep(poll_interval)
         except BaseException as e:
@@ -191,23 +197,23 @@ async def run_loop(poll_interval=0.25, stability_threshold=0.03, stability_delay
 
 async def run_once(args):
     """Run one vision → plan → execute cycle. Returns True if an action was taken."""
-    # Manual override — skip vision, infer player from flag
-    sequence = None
+    # Manual override — skip vision and RL, useful for calibration
+    play = None
     player = None
-    if args.center_left:  player = PlayerID.CENTER;     sequence = _CENTER_PLAYBOOK["left"]
-    if args.center_right: player = PlayerID.CENTER;     sequence = _CENTER_PLAYBOOK["right"]
-    if args.rw_shot: player = PlayerID.RIGHT_WING; sequence = get_rw_sequence(_rw_side(args), _rw_action(args, "shot"))
-    if args.rw_pass: player = PlayerID.RIGHT_WING; sequence = get_rw_sequence(_rw_side(args), _rw_action(args, "pass"))
-    if args.rd_left:  player = PlayerID.RIGHT_D; sequence = _RIGHT_D_PLAYBOOK["left"]
-    if args.rd_right: player = PlayerID.RIGHT_D; sequence = _RIGHT_D_PLAYBOOK["right"]
-    if args.ld_left:  player = PlayerID.LEFT_D;  sequence = _LEFT_D_PLAYBOOK["left"]
-    if args.ld_right: player = PlayerID.LEFT_D;  sequence = _LEFT_D_PLAYBOOK["right"]
-    if args.lw_left:  player = PlayerID.LEFT_WING; sequence = _LEFT_WING_PLAYBOOK["left"]
-    if args.lw_right: player = PlayerID.LEFT_WING; sequence = _LEFT_WING_PLAYBOOK["right"]
+    if args.center_left:  player = PlayerID.CENTER;     play = _CENTER_PLAYBOOK["left"]
+    if args.center_right: player = PlayerID.CENTER;     play = _CENTER_PLAYBOOK["right"]
+    if args.rw_shot: player = PlayerID.RIGHT_WING; play = _RIGHT_WING_PLAYBOOK[_rw_side(args)]
+    if args.rw_pass: player = PlayerID.RIGHT_WING; play = _RIGHT_WING_PLAYBOOK[_rw_side(args)]
+    if args.rd_left:  player = PlayerID.RIGHT_D; play = _RIGHT_D_PLAYBOOK["left"]
+    if args.rd_right: player = PlayerID.RIGHT_D; play = _RIGHT_D_PLAYBOOK["right"]
+    if args.ld_left:  player = PlayerID.LEFT_D;  play = _LEFT_D_PLAYBOOK["left"]
+    if args.ld_right: player = PlayerID.LEFT_D;  play = _LEFT_D_PLAYBOOK["right"]
+    if args.lw_left:  player = PlayerID.LEFT_WING; play = _LEFT_WING_PLAYBOOK["left"]
+    if args.lw_right: player = PlayerID.LEFT_WING; play = _LEFT_WING_PLAYBOOK["right"]
 
-    if sequence:
+    if play:
         print(f"Manual override: player={player.name}")
-        await execute_sequence(sequence, player)
+        await execute_sequence(get_sequence(play), player)
         return True
 
     return await run_playbook_from_puck_position()
@@ -215,6 +221,9 @@ async def run_once(args):
 
 async def main():
     args = parse_args()
+
+    if args.play:
+        rl_agent.set_play_mode(True)
 
     if args.loop:
         await run_loop()
