@@ -6,196 +6,184 @@
   <title>Rod Hockey</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@500;700;900&display=swap" rel="stylesheet" />
   <style>
-    /* ── Palette: dark arena, cold ice, Islanders blue + orange accents ──────── */
-    :root {
-      --arena:   #0a1422;
-      --arena-2: #102134;
-      --ice-a:   #e6f1fb;
-      --ice-b:   #bfd8ee;
-      --line-blue: #1e5fd8;
-      --line-red:  #d7263d;
-      --puck:    #0e0f12;
-      --gold:    #f4b740;
-      --goal:    #ff2d2d;
-      --isle-blue: #003087;   /* Islanders blue */
-      --isle-orange: #fc4c02; /* Islanders orange */
-      --ink:     #eaf2fb;
-      --muted:   #8aa0b8;
-      color-scheme: dark;
+    /* ── Arcade-cabinet theme: neon-on-dark, VIAM helmet blue ──────────────── */
+    :root{
+      --void:#05060f; --void2:#0a0d22;
+      --cyan:#22e7ff; --magenta:#ff2e8b; --cobalt:#2f6bff;
+      --ice-a:#e9f5ff; --ice-b:#bcd9f5; --line-blue:#1e5fd8; --line-red:#ff2d4a;
+      --gold:#ffd23f; --goal:#ff2d4a; --ink:#eafaff; --muted:#7fa0c8;
+      --isle-blue:#0a4fd6; --isle-deep:#0a2a6b; --isle-orange:#fc4c02;
+      color-scheme:dark;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; min-height: 100vh; position: relative; overflow-x: hidden;
-      background: radial-gradient(1200px 600px at 50% -10%, #16314d 0%, var(--arena) 60%);
-      color: var(--ink); font-family: 'Inter', system-ui, sans-serif;
-      display: flex; flex-direction: column; align-items: center;
+    *{box-sizing:border-box;}
+    body{
+      margin:0; min-height:100vh; font-family:'Inter',system-ui,sans-serif; color:var(--ink);
+      background:
+        radial-gradient(900px 480px at 50% -8%, #14215e 0%, rgba(10,13,34,0) 60%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 2px, rgba(0,0,0,0) 2px 4px),
+        linear-gradient(180deg,#070a1a,#05060f);
     }
-    /* Helmet + viam watermark sitting behind everything. */
-    .bg-watermark { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .10; }
-    .bg-watermark svg { width: 100%; height: 100%; }
-    .wrap { width: 100%; max-width: 660px; padding: 18px 18px 28px; position: relative; z-index: 1; }
+    /* clean neon arcade-cabinet frame hugging the screen edges */
+    .frame{position:fixed; inset:14px; z-index:60; pointer-events:none; border-radius:16px;
+      border:1px solid rgba(34,231,255,.55);
+      box-shadow:0 0 0 2px rgba(47,107,255,.35), 0 0 24px 3px rgba(34,231,255,.4), inset 0 0 26px rgba(34,231,255,.14);}
 
-    /* ── Scoreboard header ──────────────────────────────────────────────────── */
-    header {
-      display: flex; align-items: center; gap: 12px;
-      background: linear-gradient(180deg, var(--arena-2), #0b1828);
-      border: 1px solid #1d3a57; border-radius: 14px; padding: 12px 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.45);
+    .wrap{max-width:720px; margin:0 auto; padding:46px 30px 56px; position:relative; z-index:2;}
+
+    /* arcade marquee */
+    .marquee{display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom:6px;}
+    .marquee h1{font-family:'Press Start 2P',monospace; font-size:30px; line-height:1.25; margin:0; text-align:center;
+      color:#fff; text-shadow:0 0 8px var(--cyan), 4px 4px 0 var(--magenta), 0 0 22px rgba(47,107,255,.7); letter-spacing:1px;}
+    .credits{display:flex; justify-content:space-between; align-items:center; font-family:'Press Start 2P',monospace;
+      font-size:9px; color:var(--muted); margin:16px 4px 0; letter-spacing:1px;}
+    .credits .live{display:inline-flex; align-items:center; gap:7px; color:var(--muted);}
+    .led{width:9px; height:9px; border-radius:50%; background:var(--muted);}
+    .led.live{background:var(--cyan); box-shadow:0 0 10px var(--cyan);}
+    .led.bad{background:var(--goal); box-shadow:0 0 10px var(--goal);}
+    .credits .live.on{color:var(--cyan); text-shadow:0 0 8px var(--cyan);}
+    .blink{animation:blink 1.1s steps(1) infinite;} @keyframes blink{50%{opacity:.2;}}
+
+    .screen{margin-top:16px; border-radius:14px; padding:12px; background:linear-gradient(180deg,#0b1024,#070a16);
+      border:1px solid #1d2a55; box-shadow:0 0 0 3px #0a0f24, 0 0 50px rgba(47,107,255,.3), inset 0 0 40px rgba(34,231,255,.06);}
+    svg.rink{display:block; width:100%; height:auto; border-radius:8px; filter:drop-shadow(0 8px 18px rgba(0,0,0,.5));}
+    #puck{transition:transform .4s cubic-bezier(.2,.8,.2,1), opacity .25s; filter:drop-shadow(0 0 6px rgba(0,0,0,.6));}
+    #puckGlow{transition:fill .2s, opacity .2s;}
+
+    .cap{font-family:'Press Start 2P',monospace; text-align:center; font-size:13px; margin:20px 6px 0;
+      letter-spacing:1px; line-height:1.7; color:var(--cyan); text-shadow:0 0 10px rgba(34,231,255,.55);}
+    .cap .z{color:#fff; text-shadow:0 0 10px var(--magenta);}
+    .cap.dim{color:var(--muted); text-shadow:none;}
+
+    .controls{margin-top:26px; display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+    button{font-family:'Press Start 2P',monospace; font-size:13px; color:#fff; border:none; cursor:pointer; padding:22px 16px;
+      border-radius:10px; letter-spacing:1px; line-height:1.5; position:relative; text-shadow:0 2px 0 rgba(0,0,0,.45);
+      transition:transform .07s, filter .15s; display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center;}
+    button:active{transform:translateY(3px);}
+    button:disabled{filter:grayscale(.7) brightness(.55); cursor:not-allowed;}
+    button:focus-visible{outline:3px solid var(--gold); outline-offset:3px;}
+    .start{background:linear-gradient(180deg,#1bd14a,#0e8f33); box-shadow:0 6px 0 #0a6e26, 0 0 26px rgba(27,209,74,.5);}
+    .start.on{background:linear-gradient(180deg,#ff3a5a,#c4112c); box-shadow:0 6px 0 #8c0a20, 0 0 30px rgba(255,45,74,.6);}
+    .reset{background:linear-gradient(180deg,#2f6bff,#1c44c8); box-shadow:0 6px 0 #122e8c, 0 0 26px rgba(47,107,255,.5);}
+    .lamp{width:16px;height:16px;border-radius:50%;background:#3a0d12;box-shadow:inset 0 0 5px #000;}
+    .start.on .lamp{background:var(--goal); box-shadow:0 0 16px 5px var(--goal); animation:pulse 1s infinite;}
+    @keyframes pulse{50%{opacity:.5;}}
+    .hint{font-family:'Press Start 2P',monospace; font-size:8px; color:rgba(255,255,255,.78);}
+
+    .status{font-family:'Press Start 2P',monospace; text-align:center; margin-top:18px; min-height:14px;
+      font-size:9px; line-height:1.6; color:var(--muted); letter-spacing:1px;}
+    .errbox{display:none; margin-top:12px; background:#1a0e12; border:1px solid #5b1f27; border-radius:10px; padding:0 14px;}
+    .errbox[open]{padding-bottom:12px;}
+    .errbox summary{cursor:pointer; padding:12px 0; color:#ff8a8a; font-size:12px; list-style:none;}
+    .errbox summary::-webkit-details-marker{display:none;}
+    .errbox pre{margin:0; white-space:pre-wrap; word-break:break-word; font-size:12px; color:#ffb3b3; font-family:ui-monospace,monospace;}
+
+    /* bottom scene: one Islanders-style player + one helmet, on the ice glow */
+    .bottom{margin-top:30px; padding-top:20px; display:flex; align-items:flex-end; justify-content:center; gap:40px;
+      position:relative; border-top:1px solid rgba(47,107,255,.22);}
+    .bottom::after{content:""; position:absolute; left:8%; right:8%; bottom:6px; height:14px; border-radius:50%;
+      background:radial-gradient(ellipse at center, rgba(34,231,255,.35), rgba(34,231,255,0) 70%);}
+    .bottom .player{height:172px; width:auto; position:relative; z-index:1; filter:drop-shadow(0 10px 10px rgba(0,0,0,.45));}
+    .bottom .helmet-hero{height:118px; width:auto; border-radius:12px; position:relative; z-index:1;
+      box-shadow:0 0 0 1px rgba(34,231,255,.5), 0 0 22px rgba(34,231,255,.4); filter:saturate(1.18);}
+
+    @media (max-width:520px){
+      .marquee h1{font-size:22px;}
+      .controls{grid-template-columns:1fr;}
+      .bottom{gap:24px;}
+      .bottom .player{height:140px;} .bottom .helmet-hero{height:96px;}
     }
-    header .sticks { width: 34px; height: 34px; flex: none; }
-    h1 { font-family: 'Bebas Neue', sans-serif; font-weight: 400; font-size: 36px;
-         letter-spacing: 2px; margin: 0; line-height: 1; flex: 1; color: var(--ink); }
-    h1 b { color: var(--gold); }
-    .conn { display: inline-flex; align-items: center; gap: 7px; font-size: 12px;
-            letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-    .led { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
-    .led.live { background: #3fdc6b; box-shadow: 0 0 10px #3fdc6b; }
-    .led.bad  { background: var(--goal); box-shadow: 0 0 10px var(--goal); }
-
-    /* ── The rink (bigger) — also the live puck map ─────────────────────────── */
-    .rink-card {
-      margin-top: 16px; border-radius: 20px; overflow: hidden;
-      border: 4px solid #20435f; box-shadow: 0 14px 40px rgba(0,0,0,.55); background: #0d1c2c;
+    @media (prefers-reduced-motion:reduce){
+      #puck{transition:none;} .start.on .lamp{animation:none;} .blink{animation:none;}
     }
-    svg.rink { display: block; width: 100%; height: auto; }
-    #puck { transition: transform .4s cubic-bezier(.2,.8,.2,1), opacity .25s; }
-    .puck-caption { text-align: center; margin: 14px 2px 0; font-size: 16px; color: var(--muted); }
-    .puck-caption b { color: var(--ink); }
-    .puck-caption.ready b { color: #3fdc6b; }
-
-    /* ── Controls ───────────────────────────────────────────────────────────── */
-    .controls { margin-top: 18px; display: flex; flex-direction: column; gap: 12px; }
-    button { font-family: 'Bebas Neue', sans-serif; letter-spacing: 1.5px; font-size: 26px;
-             border: none; border-radius: 14px; cursor: pointer; color: #fff; padding: 20px;
-             display: flex; align-items: center; gap: 14px; transition: transform .08s, filter .15s;
-             text-align: left; }
-    button:active { transform: translateY(2px); }
-    button:disabled { filter: grayscale(.7) brightness(.6); cursor: not-allowed; }
-    button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
-    button .ico { width: 30px; height: 30px; flex: none; }
-    button .label { flex: 1; }
-    .auto { background: linear-gradient(180deg, #1f7a3a, #14622e);
-            box-shadow: inset 0 0 0 1px #2da156, 0 8px 22px rgba(20,98,46,.4); }
-    .auto.on { background: linear-gradient(180deg, #9a1626, #6f0f1b);
-               box-shadow: inset 0 0 0 1px #d7263d, 0 8px 22px rgba(215,38,61,.45); }
-    .lamp { width: 18px; height: 18px; border-radius: 50%; flex: none;
-            background: #3a0d12; box-shadow: inset 0 0 4px #000; }
-    .auto.on .lamp { background: var(--goal);
-                     box-shadow: 0 0 16px 4px var(--goal), inset 0 0 4px #ff9a9a;
-                     animation: pulse 1s ease-in-out infinite; }
-    @keyframes pulse { 50% { opacity: .55; } }
-    .home { background: linear-gradient(180deg, #29445f, #1b3147); box-shadow: inset 0 0 0 1px #38597a; }
-
-    .status { text-align: center; margin-top: 14px; min-height: 18px; font-size: 13px;
-              color: var(--muted); letter-spacing: .3px; word-break: break-word; }
-    .errbox { display: none; margin-top: 10px; background: #1a0e12; border: 1px solid #5b1f27;
-              border-radius: 10px; padding: 0 14px; }
-    .errbox[open] { padding-bottom: 12px; }
-    .errbox summary { cursor: pointer; padding: 12px 0; color: #ff8a8a; font-size: 13px;
-                      letter-spacing: .3px; list-style: none; }
-    .errbox summary::-webkit-details-marker { display: none; }
-    .errbox pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: 12px;
-                  color: #ffb3b3; font-family: ui-monospace, monospace; }
-    @media (prefers-reduced-motion: reduce) { #puck { transition: none; } .auto.on .lamp { animation: none; } }
   </style>
 </head>
 <body>
-  <!-- Background: many stylized hockey helmets (Islanders colors) + viam wordmark, tiled. -->
-  <div class="bg-watermark" aria-hidden="true">
-    <svg preserveAspectRatio="xMidYMid slice">
-      <defs>
-        <pattern id="helmets" width="200" height="170" patternUnits="userSpaceOnUse" patternTransform="rotate(-8)">
-          <g transform="translate(12,14) scale(0.42)">
-            <ellipse cx="150" cy="110" rx="110" ry="92" fill="var(--isle-blue)"/>
-            <path d="M150 18 C176 30 176 190 150 202 C150 130 150 90 150 18 Z" fill="var(--isle-orange)"/>
-            <rect x="92" y="52" width="40" height="8" rx="4" fill="#0a1f5c"/>
-            <rect x="92" y="70" width="40" height="8" rx="4" fill="#0a1f5c"/>
-            <circle cx="120" cy="150" r="22" fill="#0a1f5c"/>
-            <g fill="none" stroke="#0a1f5c" stroke-width="6" stroke-linecap="round">
-              <path d="M252 74 C292 110 270 170 226 184"/>
-              <path d="M244 60 C300 96 286 176 232 196"/>
-              <line x1="250" y1="92" x2="282" y2="150"/>
-            </g>
-            <text x="150" y="122" text-anchor="middle" font-family="Inter, sans-serif"
-                  font-weight="700" font-size="46" letter-spacing="2" fill="#ffffff">viam</text>
-          </g>
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#helmets)"/>
-    </svg>
-  </div>
+  <div class="frame" aria-hidden="true"></div>
 
   <div class="wrap">
-    <header>
-      <svg class="sticks" viewBox="0 0 40 40" aria-hidden="true">
-        <g stroke="#d9b27a" stroke-width="3" stroke-linecap="round">
-          <line x1="7" y1="6" x2="30" y2="30" /><line x1="33" y1="6" x2="10" y2="30" />
-        </g>
-        <path d="M28 28 L36 30 L34 36 L27 33 Z" fill="#d7263d"/>
-        <path d="M12 28 L4 30 L6 36 L13 33 Z" fill="#1e5fd8"/>
-      </svg>
-      <h1>ROD <b>HOCKEY</b></h1>
-      <span class="conn" id="conn"><span class="led" id="led"></span><span id="connText">Connecting</span></span>
-    </header>
+    <div class="marquee"><h1>ROD&nbsp;HOCKEY</h1></div>
+    <div class="credits">
+      <span>1 PLAYER</span>
+      <span class="live" id="conn"><span class="led" id="led"></span><span id="connText">CONNECTING</span></span>
+      <span class="blink">INSERT&nbsp;PUCK</span>
+    </div>
 
     <!-- Rink: top-down ice. Puck is plotted at its true (u, v). -->
-    <div class="rink-card">
+    <div class="screen">
       <svg class="rink" viewBox="0 0 600 300" role="img" aria-label="Rink with live puck position">
-        <defs>
-          <linearGradient id="ice" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="var(--ice-a)"/><stop offset="1" stop-color="var(--ice-b)"/>
-          </linearGradient>
-        </defs>
+        <defs><linearGradient id="ice" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--ice-a)"/><stop offset="1" stop-color="var(--ice-b)"/></linearGradient></defs>
         <rect x="10" y="10" width="580" height="280" rx="92" fill="url(#ice)" stroke="#9bb6cf" stroke-width="2"/>
-        <line x1="78"  y1="20" x2="78"  y2="280" stroke="var(--line-red)" stroke-width="2"/>
+        <line x1="78" y1="20" x2="78" y2="280" stroke="var(--line-red)" stroke-width="2"/>
         <line x1="522" y1="20" x2="522" y2="280" stroke="var(--line-red)" stroke-width="2"/>
         <rect x="222" y="10" width="6" height="280" fill="var(--line-blue)"/>
         <rect x="372" y="10" width="6" height="280" fill="var(--line-blue)"/>
         <rect x="297" y="10" width="6" height="280" fill="var(--line-red)"/>
         <circle cx="300" cy="150" r="46" fill="none" stroke="var(--line-blue)" stroke-width="2.5"/>
         <circle cx="300" cy="150" r="4" fill="var(--line-red)"/>
-        <path d="M78 132 a18 18 0 0 1 0 36 Z" fill="#bcd6ef" stroke="var(--line-red)" stroke-width="1.5"/>
-        <path d="M522 132 a18 18 0 0 0 0 36 Z" fill="#bcd6ef" stroke="var(--line-red)" stroke-width="1.5"/>
+        <circle cx="140" cy="150" r="30" fill="none" stroke="var(--line-red)" stroke-width="2"/><circle cx="140" cy="150" r="4" fill="var(--line-red)"/>
+        <circle cx="460" cy="150" r="30" fill="none" stroke="var(--line-red)" stroke-width="2"/><circle cx="460" cy="150" r="4" fill="var(--line-red)"/>
         <rect x="62" y="136" width="14" height="28" fill="none" stroke="var(--line-red)" stroke-width="2"/>
         <rect x="524" y="136" width="14" height="28" fill="none" stroke="var(--line-red)" stroke-width="2"/>
-        <circle cx="140" cy="150" r="30" fill="none" stroke="var(--line-red)" stroke-width="2"/>
-        <circle cx="140" cy="150" r="4" fill="var(--line-red)"/>
-        <circle cx="460" cy="150" r="30" fill="none" stroke="var(--line-red)" stroke-width="2"/>
-        <circle cx="460" cy="150" r="4" fill="var(--line-red)"/>
         <!-- the puck (moved by JS to the detected position) -->
         <g id="puck" opacity="0" transform="translate(300,150)">
-          <ellipse cx="0" cy="3" rx="17" ry="11" fill="#000" opacity=".25"/>
-          <ellipse cx="0" cy="0" rx="17" ry="11" fill="var(--puck)"/>
+          <circle id="puckGlow" r="30" fill="var(--cyan)" opacity="0"/>
+          <ellipse cx="0" cy="3" rx="17" ry="11" fill="#000" opacity=".3"/>
+          <ellipse cx="0" cy="0" rx="17" ry="11" fill="#0e0f12"/>
           <ellipse cx="0" cy="-3" rx="14" ry="7" fill="#2a2d33"/>
         </g>
       </svg>
     </div>
-    <p class="puck-caption" id="puckCap">Searching for the puck…</p>
+
+    <p class="cap dim" id="puckCap">SEARCHING FOR PUCK…</p>
 
     <div class="controls">
-      <button id="auto" class="auto" disabled>
-        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5v14l11-7z" fill="#fff"/></svg>
-        <span class="label" id="autoLabel">Auto-play: off</span>
+      <button id="auto" class="start" disabled>
         <span class="lamp"></span>
+        <span id="autoLabel">AUTO-PLAY</span>
+        <span class="hint" id="autoHint">TAP TO START</span>
       </button>
-      <button id="home" class="home" disabled>
-        <svg class="ico" viewBox="0 0 32 24" aria-hidden="true">
-          <rect x="3" y="9" width="20" height="9" rx="2" fill="#cfe0f0"/>
-          <rect x="9" y="4" width="11" height="6" rx="1.5" fill="#9fc0e0"/>
-          <rect x="22" y="12" width="7" height="6" rx="1.5" fill="#7fa6cc"/>
-          <circle cx="9" cy="20" r="3" fill="#0e0f12"/><circle cx="20" cy="20" r="3" fill="#0e0f12"/>
-        </svg>
-        <span class="label">Home all rods</span>
+      <button id="home" class="reset" disabled>
+        HOME ALL RODS
+        <span class="hint">RESURFACE</span>
       </button>
     </div>
 
     <p class="status" id="status"></p>
     <details class="errbox" id="errBox">
-      <summary id="errSummary">⚠ Error — tap for details</summary>
+      <summary id="errSummary">⚠ ERROR — TAP FOR DETAILS</summary>
       <pre id="errMsg"></pre>
     </details>
+
+    <div class="bottom">
+      <!-- original Islanders-colored skater (not the trademarked logo) -->
+      <svg class="player" viewBox="0 0 140 184" role="img" aria-label="Hockey player">
+        <line x1="44" y1="96" x2="120" y2="150" stroke="#caa06a" stroke-width="5" stroke-linecap="round"/>
+        <path d="M116 145 L134 150 L132 161 L113 156 Z" fill="#111418"/>
+        <path d="M64 122 L52 160" stroke="var(--isle-deep)" stroke-width="15" stroke-linecap="round"/>
+        <path d="M84 122 L98 158" stroke="var(--isle-deep)" stroke-width="15" stroke-linecap="round"/>
+        <path d="M56 148 L52 160" stroke="var(--isle-orange)" stroke-width="15" stroke-linecap="round"/>
+        <path d="M92 146 L98 158" stroke="var(--isle-orange)" stroke-width="15" stroke-linecap="round"/>
+        <path d="M42 160 L62 160 L60 168 L40 168 Z" fill="#eef3fa"/>
+        <path d="M90 158 L110 160 L108 168 L88 168 Z" fill="#eef3fa"/>
+        <line x1="40" y1="170" x2="62" y2="170" stroke="#9fb3cc" stroke-width="2"/>
+        <line x1="88" y1="170" x2="110" y2="170" stroke="#9fb3cc" stroke-width="2"/>
+        <path d="M49 80 Q72 71 93 81 L88 124 Q70 130 54 124 Z" fill="var(--isle-blue)"/>
+        <rect x="51" y="101" width="40" height="9" fill="var(--isle-orange)"/>
+        <text x="71" y="99" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="13" fill="#fff">21</text>
+        <path d="M52 85 L36 98" stroke="var(--isle-blue)" stroke-width="13" stroke-linecap="round"/>
+        <path d="M90 85 L112 100" stroke="var(--isle-blue)" stroke-width="13" stroke-linecap="round"/>
+        <circle cx="35" cy="99" r="8" fill="var(--isle-orange)"/>
+        <circle cx="114" cy="102" r="8" fill="var(--isle-orange)"/>
+        <circle cx="71" cy="58" r="15" fill="#f0c8a4"/>
+        <path d="M55 57 a16 16 0 0 1 32 0 Z" fill="var(--isle-blue)"/>
+        <path d="M56 57 q15 -6 30 0" fill="none" stroke="var(--isle-orange)" stroke-width="3"/>
+        <path d="M60 64 H82 M60 69 H82 M66 61 V72 M76 61 V72" stroke="#23344f" stroke-width="2"/>
+      </svg>
+      <img class="helmet-hero" src="./viam-helmet.png" alt="VIAM helmet on the ice" />
+    </div>
   </div>
 
   <script type="module">
@@ -210,11 +198,14 @@
     const EMBEDDED = { host: '', apiKeyId: '', apiKey: '' };
 
     const led = document.getElementById('led');
+    const conn = document.getElementById('conn');
     const connText = document.getElementById('connText');
     const puck = document.getElementById('puck');
+    const puckGlow = document.getElementById('puckGlow');
     const puckCap = document.getElementById('puckCap');
     const autoBtn = document.getElementById('auto');
     const autoLabel = document.getElementById('autoLabel');
+    const autoHint = document.getElementById('autoHint');
     const homeBtn = document.getElementById('home');
     const statusEl = document.getElementById('status');
     const errBox = document.getElementById('errBox');
@@ -225,17 +216,23 @@
     let autoOn = false;
 
     function showError(label, e) {
-      errSummary.textContent = `⚠ ${label} — tap for details`;
+      errSummary.textContent = `⚠ ${label.toUpperCase()} — TAP FOR DETAILS`;
       errMsg.textContent = e?.message || String(e);
       errBox.style.display = 'block';
       console.error(label, e);
     }
     function clearError() { errBox.style.display = 'none'; }
 
-    // "LEFT_WING" -> "Left Wing"
+    function setConn(state) {
+      // state: 'connecting' | 'live' | 'bad'
+      led.className = state === 'live' ? 'led live' : state === 'bad' ? 'led bad' : 'led';
+      conn.className = state === 'live' ? 'live on' : 'live';
+      connText.textContent = state === 'live' ? 'ON THE ICE' : state === 'bad' ? 'OFFLINE' : 'CONNECTING';
+    }
+
+    // "LEFT_WING" -> "LEFT WING"
     function pretty(zone) {
-      return zone.toLowerCase().split('_')
-        .map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+      return zone.replace(/_/g, ' ').toUpperCase();
     }
 
     async function connect() {
@@ -247,15 +244,14 @@
         host, credentials, signalingAddress: 'https://app.viam.com:443',
       });
       service = new VIAM.GenericServiceClient(client, SERVICE_NAME);
-      led.className = 'led live';
-      connText.textContent = 'Live';
+      setConn('live');
       autoBtn.disabled = false;
       homeBtn.disabled = false;
     }
 
     function renderAuto() {
-      autoLabel.textContent = autoOn ? 'Auto-play: on' : 'Auto-play: off';
-      autoBtn.className = autoOn ? 'auto on' : 'auto';
+      autoBtn.className = autoOn ? 'start on' : 'start';
+      autoHint.textContent = autoOn ? 'ON — TAP TO STOP' : 'TAP TO START';
     }
 
     // Plot the puck at its true (u, v) on the rink and describe the zone.
@@ -263,8 +259,8 @@
     function renderPuck(s) {
       if (!s.puck_detected) {
         puck.setAttribute('opacity', '0');
-        puckCap.className = 'puck-caption';
-        puckCap.textContent = 'Searching for the puck…';
+        puckCap.className = 'cap dim';
+        puckCap.textContent = 'SEARCHING FOR PUCK…';
         return;
       }
       const x = 10 + s.puck_v * 580;
@@ -272,14 +268,19 @@
       puck.setAttribute('transform', `translate(${x},${y})`);
       puck.setAttribute('opacity', '1');
       if (s.zone && s.has_play) {
-        puckCap.className = 'puck-caption ready';
-        puckCap.innerHTML = `Puck in <b>${pretty(s.zone)}</b> zone — ready to fire`;
+        puckGlow.setAttribute('fill', 'var(--magenta)');
+        puckGlow.setAttribute('opacity', '0.22');
+        puckCap.className = 'cap';
+        puckCap.innerHTML = `&#9654; <span class="z">${pretty(s.zone)}</span> &mdash; READY TO FIRE`;
       } else if (s.zone) {
-        puckCap.className = 'puck-caption';
-        puckCap.innerHTML = `Puck in <b>${pretty(s.zone)}</b> — no play here`;
+        puckGlow.setAttribute('fill', 'var(--cyan)');
+        puckGlow.setAttribute('opacity', '0.12');
+        puckCap.className = 'cap dim';
+        puckCap.innerHTML = `<span class="z">${pretty(s.zone)}</span> &mdash; NO PLAY HERE`;
       } else {
-        puckCap.className = 'puck-caption';
-        puckCap.textContent = 'Puck detected — not in a play zone';
+        puckGlow.setAttribute('opacity', '0');
+        puckCap.className = 'cap dim';
+        puckCap.textContent = 'PUCK SPOTTED — NOT IN A PLAY ZONE';
       }
     }
 
@@ -290,12 +291,10 @@
         autoOn = !!s.auto_play;
         renderAuto();
         renderPuck(s);
-        led.className = 'led live';
-        connText.textContent = 'Live';
+        setConn('live');
         clearError();
       } catch (e) {
-        led.className = 'led bad';
-        connText.textContent = 'Offline';
+        setConn('bad');
         showError('Status failed', e);
       }
     }
@@ -314,10 +313,10 @@
 
     homeBtn.onclick = async () => {
       homeBtn.disabled = true;
-      statusEl.textContent = 'Resurfacing — homing all rods…';
+      statusEl.textContent = 'RESURFACING — HOMING ALL RODS…';
       try {
         const r = await service.doCommand(VIAM.Struct.fromJson({ action: 'home' }));
-        statusEl.textContent = r.message || 'Rods homed.';
+        statusEl.textContent = (r.message || 'RODS HOMED.').toUpperCase();
       } catch (e) {
         statusEl.textContent = '';
         showError('Home failed', e);
@@ -331,8 +330,7 @@
       await refreshStatus();
       setInterval(refreshStatus, 1000);
     } catch (e) {
-      led.className = 'led bad';
-      connText.textContent = 'Offline';
+      setConn('bad');
       showError('Connect failed', e);
     }
   </script>
