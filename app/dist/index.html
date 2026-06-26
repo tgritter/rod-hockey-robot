@@ -110,7 +110,17 @@
     .status {
       text-align: center; margin-top: 14px; min-height: 18px;
       font-size: 13px; color: var(--muted); letter-spacing: .3px;
+      word-break: break-word;
     }
+    /* Collapsible error panel — hidden until something fails. */
+    .errbox { display: none; margin-top: 10px; background: #1a0e12;
+              border: 1px solid #5b1f27; border-radius: 10px; padding: 0 14px; }
+    .errbox[open] { padding-bottom: 12px; }
+    .errbox summary { cursor: pointer; padding: 12px 0; color: #ff8a8a;
+                      font-size: 13px; letter-spacing: .3px; list-style: none; }
+    .errbox summary::-webkit-details-marker { display: none; }
+    .errbox pre { margin: 0; white-space: pre-wrap; word-break: break-word;
+                  font-size: 12px; color: #ffb3b3; font-family: ui-monospace, monospace; }
     @media (prefers-reduced-motion: reduce) {
       #puck { transition: none; }
       .auto.on .lamp { animation: none; }
@@ -197,6 +207,12 @@
     </div>
 
     <p class="status" id="status"></p>
+
+    <!-- Collapsible error readout: appears only when a call fails. -->
+    <details class="errbox" id="errBox">
+      <summary id="errSummary">⚠ Error — tap for details</summary>
+      <pre id="errMsg"></pre>
+    </details>
   </div>
 
   <script type="module">
@@ -227,9 +243,21 @@
     const autoLabel = document.getElementById('autoLabel');
     const homeBtn = document.getElementById('home');
     const statusEl = document.getElementById('status');
+    const errBox = document.getElementById('errBox');
+    const errSummary = document.getElementById('errSummary');
+    const errMsg = document.getElementById('errMsg');
 
     let service = null;
     let autoOn = false;
+
+    // Show the collapsible error panel with a label + the real message.
+    function showError(label, e) {
+      errSummary.textContent = `⚠ ${label} — tap for details`;
+      errMsg.textContent = e?.message || String(e);
+      errBox.style.display = 'block';
+      console.error(label, e);
+    }
+    function clearError() { errBox.style.display = 'none'; }
 
     async function connect() {
       // Embedded credentials if provided (no login), else the Viam login cookies.
@@ -273,30 +301,53 @@
         autoOn = !!s.auto_play;
         renderAuto();
         renderPuck(!!s.puck_detected, s.puck_side);
-      } catch {
+        // Recovered: clear any prior error and show Live again.
+        led.className = 'led live';
+        connText.textContent = 'Live';
+        clearError();
+      } catch (e) {
         led.className = 'led bad';
         connText.textContent = 'Offline';
+        showError('Status failed', e);
       }
     }
 
     autoBtn.onclick = async () => {
       autoBtn.disabled = true;
-      await service.doCommand({ action: 'auto_play', enabled: !autoOn });
-      await refreshStatus();
-      autoBtn.disabled = false;
+      try {
+        await service.doCommand({ action: 'auto_play', enabled: !autoOn });
+        await refreshStatus();
+      } catch (e) {
+        showError('Auto-play failed', e);
+      } finally {
+        autoBtn.disabled = false;
+      }
     };
 
     homeBtn.onclick = async () => {
       homeBtn.disabled = true;
       statusEl.textContent = 'Resurfacing — homing all rods…';
-      const r = await service.doCommand({ action: 'home' });
-      statusEl.textContent = r.message || 'Rods homed.';
-      homeBtn.disabled = false;
+      try {
+        const r = await service.doCommand({ action: 'home' });
+        statusEl.textContent = r.message || 'Rods homed.';
+      } catch (e) {
+        statusEl.textContent = '';
+        showError('Home failed', e);
+      } finally {
+        homeBtn.disabled = false;
+      }
     };
 
-    await connect();
-    await refreshStatus();
-    setInterval(refreshStatus, 1000);
+    // Boot. Surface connection failures in the panel too (instead of a silent hang).
+    try {
+      await connect();
+      await refreshStatus();
+      setInterval(refreshStatus, 1000);
+    } catch (e) {
+      led.className = 'led bad';
+      connText.textContent = 'Offline';
+      showError('Connect failed', e);
+    }
   </script>
 </body>
 </html>
