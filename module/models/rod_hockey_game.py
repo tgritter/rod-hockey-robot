@@ -78,14 +78,28 @@ class RodHockeyGame(Generic, EasyResource):
                 await Gantry.from_robot(robot, name).home()
             return {"message": "All rods homed."}
 
-        # Report puck detection + which side it's on, plus current auto-play state.
+        # Report the puck's true (u, v), the zone/player it maps to, whether a play
+        # exists there, and the auto-play state. The UI uses this to plot the puck
+        # on the rink and say whether it will fire.
         if action == "status":
             from robot.vision import get_puck_field_coordinates
-            u, _ = await get_puck_field_coordinates()
+            from robot.playbook import select_playbook
+            u, v = await get_puck_field_coordinates()
+            player, sequence = (None, None)
+            if u is not None:
+                # A side with no matching playbook entry would raise; don't let that
+                # break status — just report "no play here".
+                try:
+                    player, sequence = select_playbook(u, v)
+                except Exception:
+                    player, sequence = None, None
             return {
                 "auto_play": self._auto_run,
                 "puck_detected": u is not None,
-                "puck_side": ("left" if u < 0.5 else "right") if u is not None else "",
+                "puck_u": float(u) if u is not None else 0.0,
+                "puck_v": float(v) if v is not None else 0.0,
+                "zone": player.name if player else "",
+                "has_play": sequence is not None,
             }
 
         # Start or stop the autonomous play loop (graceful stop via the flag).
