@@ -23,7 +23,7 @@ All values below are placeholders -- calibrate on hardware.
 from engine.constants import PlayerID
 from . import zones
 
-_FALLBACK_ACTION = {"type": None, "target": None, "steps": [{"r": 180}]}
+_FALLBACK_ACTION = {"name": None, "type": None, "target": None, "steps": [{"r": 180}]}
 
 
 def find_action(play: dict, action_type: str = None) -> dict:
@@ -56,7 +56,7 @@ CENTER_LEFT = {
         {"t": 0.95, "r": 100},  # TODO: calibrate -- center, puck on left
     ],
     "actions": [
-        {"type": "shot", "target": None, "steps": [
+        {"name": "v0", "type": "shot", "target": None, "steps": [
             {"r": 300, "rpm": 400, "direction": "ccw"},
         ]},
     ],
@@ -67,7 +67,7 @@ CENTER_MIDDLE_LEFT = {
         {"t": 0.95, "r": 100},
     ],
     "actions": [
-        {"type": "shot", "target": None, "steps": [
+        {"name": "v0", "type": "shot", "target": None, "steps": [
             {"r": 220, "rpm": 20, "direction": "ccw"},
             {"r": 0, "rpm": 250, "direction": "cw"},
             {"r": 90, "rpm": 1000, "direction": "cw"},
@@ -80,7 +80,7 @@ CENTER_MIDDLE_RIGHT = {
         {"t": 0.95, "r": 260},
     ],
     "actions": [
-        {"type": "shot", "target": None, "steps": [
+        {"name": "v0", "type": "shot", "target": None, "steps": [
             {"r": 150, "rpm": 20, "direction": "cw"},
             {"r": 0, "rpm": 250, "direction": "ccw"},
             {"r": 270, "rpm": 1000, "direction": "ccw"},
@@ -93,7 +93,7 @@ CENTER_RIGHT = {
         {"t": 0.95, "r": 260},  # TODO: calibrate -- center, puck on right
     ],
     "actions": [
-        {"type": "shot", "target": None, "steps": [
+        {"name": "v0", "type": "shot", "target": None, "steps": [
             {"r": 60, "rpm": 400, "direction": "cw"},
         ]},
     ],
@@ -114,7 +114,7 @@ RIGHT_WING_LEFT = {
         {"t": 0.5, "r": 125, "speed_mm_per_sec": 10000},  # TODO: calibrate -- right wing position, puck on left
     ],
     "actions": [
-        {"type": "pass", "target": PlayerID.CENTER, "steps": [
+        {"name": "v0", "type": "pass", "target": PlayerID.CENTER, "steps": [
             {"t": 0.485, "r": 180, "direction": "ccw", "speed_mm_per_sec": 10000},
             {"r": 0, "rpm": 150},
         ]},
@@ -126,7 +126,7 @@ RIGHT_WING_RIGHT = {
         {"t": 0.5, "r": 265, "speed_mm_per_sec": 10000},  # TODO: calibrate -- right wing position, puck on right
     ],
     "actions": [
-        {"type": "shot", "target": None, "steps": [
+        {"name": "v0", "type": "shot", "target": None, "steps": [
             {"r": 60, "rpm": 300, "direction": "ccw"},
         ]},
     ],
@@ -139,7 +139,7 @@ RIGHT_WING_BOTTOM_LEFT = {
         {"t": 0.5, "speed_mm_per_sec": 10000},
     ],
     "actions": [
-        {"type": "pass", "target": PlayerID.CENTER, "steps": [
+        {"name": "v0", "type": "pass", "target": PlayerID.CENTER, "steps": [
             {"t": 0.525, "r": 270, "direction": "cw", "speed_mm_per_sec": 10000},
             {"t": 0.5, "r": 180, "rpm": 400, "direction": "cw", "speed_mm_per_sec": 10000},
         ]},
@@ -153,7 +153,7 @@ RIGHT_WING_BOTTOM_RIGHT = {
         {"t": 0.50, "speed_mm_per_sec": 10000},
     ],
     "actions": [
-        {"type": "pass", "target": PlayerID.CENTER, "steps": [
+        {"name": "v0", "type": "pass", "target": PlayerID.CENTER, "steps": [
             {"r": 60, "rpm": 260},
         ]},
     ],
@@ -175,7 +175,7 @@ RIGHT_D_LEFT = {
         {"t": 0.95},
     ],
     "actions": [
-        {"type": "pass", "target": PlayerID.RIGHT_WING, "steps": [
+        {"name": "v0", "type": "pass", "target": PlayerID.RIGHT_WING, "steps": [
             {"r": 300, "direction": "cw", "rpm": 220},
         ]},
     ],
@@ -186,7 +186,7 @@ RIGHT_D_RIGHT = {
         {"t": 1, "r": 260},  # TODO: calibrate -- right D, puck on left
     ],
     "actions": [
-        {"type": "pass", "target": PlayerID.CENTER, "steps": [
+        {"name": "v0", "type": "pass", "target": PlayerID.CENTER, "steps": [
             {"r": 60, "direction": "ccw", "rpm": 200},
         ]},
     ],
@@ -205,7 +205,7 @@ LEFT_D_LEFT = {
         {"t": 0.8, "r": 115},  # TODO: calibrate -- left D, puck on left (pass to center)
     ],
     "actions": [
-        {"type": "pass", "target": PlayerID.CENTER, "steps": [
+        {"name": "v0", "type": "pass", "target": PlayerID.CENTER, "steps": [
             {"r": 300, "direction": "cw", "rpm": 220},
         ]},
     ],
@@ -216,7 +216,7 @@ LEFT_D_RIGHT = {
         {"t": 0.8, "r": 255, "direction": "ccw"},  # TODO: calibrate -- left D, puck on right (pass to left wing)
     ],
     "actions": [
-        {"type": "pass", "target": PlayerID.LEFT_WING, "steps": [
+        {"name": "v0", "type": "pass", "target": PlayerID.LEFT_WING, "steps": [
             {"r": 60, "direction": "ccw", "rpm": 220},
         ]},
     ],
@@ -237,7 +237,7 @@ LEFT_WING_LEFT = {
         {"t": 0.2, "r": 120, "speed_mm_per_sec": 10000},  # TODO: calibrate -- left wing, puck on left
     ],
     "actions": [
-        {"type": "shot", "target": None, "steps": [
+        {"name": "v0", "type": "shot", "target": None, "steps": [
             {"r": 300, "rpm": 400, "direction": "cw"},
         ]},
     ],
@@ -248,7 +248,7 @@ LEFT_WING_RIGHT = {
         {"t": 0.35, "r": 260, "speed_mm_per_sec": 10000},  # TODO: calibrate -- left wing, puck on right
     ],
     "actions": [
-        {"type": "pass", "target": PlayerID.CENTER, "steps": [
+        {"name": "v0", "type": "pass", "target": PlayerID.CENTER, "steps": [
             {"t": 0.34, "r": 90, "direction": "cw", "speed_mm_per_sec": 10000},
             {"r": 300, "rpm": 1000, "direction": "cw"},
         ]},
@@ -263,7 +263,7 @@ LEFT_WING_BOTTOM_LEFT = {
         {"r": 100, "direction": "ccw"},
     ],
     "actions": [
-        {"type": "pass", "target": PlayerID.RIGHT_WING, "steps": [
+        {"name": "v0", "type": "pass", "target": PlayerID.RIGHT_WING, "steps": [
             {"r": 300, "rpm": 200, "direction": "cw"},
         ]},
     ],
@@ -275,7 +275,7 @@ LEFT_WING_BOTTOM_RIGHT = {
         {"t": 1, "r": 320, "direction": "cw", "speed_mm_per_sec": 10000},
     ],
     "actions": [
-        {"type": "pass", "target": PlayerID.RIGHT_WING, "steps": [
+        {"name": "v0", "type": "pass", "target": PlayerID.RIGHT_WING, "steps": [
             {"r": 100, "rpm": 300, "direction": "ccw"},
         ]},
     ],
@@ -301,7 +301,7 @@ _PLAYBOOK_MAP = {
 
 
 def select_playbook(u: float, v: float):
-    """Return (PlayerID, play) for the puck at normalized (u, v), or (None, None).
+    """Return (PlayerID, side, play) for the puck at normalized (u, v), or (None, None, None).
 
     Side comes straight from the matched polygon. CENTER's middle_left/middle_right
     plays are available in _CENTER_PLAYBOOK but only reachable once middle polygons
@@ -309,6 +309,6 @@ def select_playbook(u: float, v: float):
     """
     player_id, side = zones.select(u, v)
     if player_id is None:
-        return None, None
+        return None, None, None
     print(f"{player_id.name} side: {side}  (u={u:.3f}, v={v:.3f})")
-    return player_id, _PLAYBOOK_MAP[player_id][side]
+    return player_id, side, _PLAYBOOK_MAP[player_id][side]
