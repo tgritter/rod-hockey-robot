@@ -297,7 +297,7 @@
     async function refreshStatus() {
       if (!service) return;
       try {
-        const s = await service.doCommand({ action: 'status' });
+        const s = await service.doCommand(VIAM.Struct.fromJson({ action: 'status' }));
         autoOn = !!s.auto_play;
         renderAuto();
         renderPuck(!!s.puck_detected, s.puck_side);
@@ -315,7 +315,7 @@
     autoBtn.onclick = async () => {
       autoBtn.disabled = true;
       try {
-        await service.doCommand({ action: 'auto_play', enabled: !autoOn });
+        await service.doCommand(VIAM.Struct.fromJson({ action: 'auto_play', enabled: !autoOn }));
         await refreshStatus();
       } catch (e) {
         showError('Auto-play failed', e);
@@ -328,7 +328,7 @@
       homeBtn.disabled = true;
       statusEl.textContent = 'Resurfacing — homing all rods…';
       try {
-        const r = await service.doCommand({ action: 'home' });
+        const r = await service.doCommand(VIAM.Struct.fromJson({ action: 'home' }));
         statusEl.textContent = r.message || 'Rods homed.';
       } catch (e) {
         statusEl.textContent = '';
