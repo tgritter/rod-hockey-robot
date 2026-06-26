@@ -22,6 +22,14 @@ from engine.constants import WIDTH, HEIGHT
 _CORNER_CLASS = "lime-green"
 _PUCK_CLASS   = "green"
 
+# Puck detector on the machine, run against the field-CROPPED camera (not raw
+# "cam"). dynamic-crop crops the raw image down to exactly the rink, so its
+# normalized (u, v) span the playing field — which is the frame zones.json's
+# polygons were authored in. Reading raw "cam" instead shifts every coordinate
+# and makes the wrong side's playbook fire. Names must match the machine config.
+_PUCK_VISION_SERVICE = "green-puck-detector"
+_PUCK_CAMERA         = "dynamic-crop"
+
 _machine = None
 
 
@@ -122,17 +130,34 @@ async def get_puck_camera_coordinates():
         raise
 
 
+def puck_uv_from_color_detections(detections):
+    """Average the normalized centers of every detection.
+
+    green-puck-detector is a color detector dedicated to the puck — every box it
+    returns IS the puck, so we don't filter by class name. (Its boxes are
+    actually labeled "green-blue", not "green", so filtering on _PUCK_CLASS would
+    drop them all.) Returns (u, v) in [0, 1], or (None, None) if nothing detected.
+    """
+    if not detections:
+        return None, None
+    us = [(d.x_min_normalized + d.x_max_normalized) / 2 for d in detections]
+    vs = [(d.y_min_normalized + d.y_max_normalized) / 2 for d in detections]
+    return sum(us) / len(us), sum(vs) / len(vs)
+
+
 async def get_puck_field_coordinates():
     """Detect the puck and return its normalized (u, v) field position.
 
+    Reads green-puck-detector against the field-cropped dynamic-crop camera, so
+    (u, v) are in the same frame as zones.json's polygons.
     Reuses a persistent robot connection; reconnects automatically on error.
     Returns (u, v) in [0, 1], or (None, None) if no puck is detected.
     """
     try:
         machine = await _get_machine()
-        vision1 = VisionClient.from_robot(machine, "green-puck-detector")
-        detections = await vision1.get_detections_from_camera("dynamic-crop")
-        u, v = puck_uv_from_detections(detections)
+        detector = VisionClient.from_robot(machine, _PUCK_VISION_SERVICE)
+        detections = await detector.get_detections_from_camera(_PUCK_CAMERA)
+        u, v = puck_uv_from_color_detections(detections)
         if u is not None:
             print(f"Puck field coords: u={u:.3f}, v={v:.3f}")
         return u, v
